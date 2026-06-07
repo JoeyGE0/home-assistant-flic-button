@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from bleak import BleakError
@@ -12,7 +13,6 @@ from homeassistant.components.bluetooth.match import BluetoothCallbackMatcher
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import (
     CONF_BATTERY_LEVEL,
@@ -23,6 +23,8 @@ from .const import (
     CONF_SERIAL_NUMBER,
     CONF_SIG_BITS,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
     Platform.EVENT,
@@ -45,10 +47,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
     """Set up Flic Button from a config entry."""
 
     address: str = entry.data[CONF_ADDRESS]
+
+    if CONF_PAIRING_ID not in entry.data or CONF_PAIRING_KEY not in entry.data:
+        _LOGGER.error(
+            "Config entry for %s is missing pairing credentials; remove it and pair again",
+            address,
+        )
+        return False
+
+    pairing_key = bytes.fromhex(entry.data[CONF_PAIRING_KEY])
+    if not pairing_key:
+        _LOGGER.error(
+            "Config entry for %s has empty pairing key; remove it and pair again",
+            address,
+        )
+        return False
+
     ble_device = bluetooth.async_ble_device_from_address(
         hass, address.upper(), connectable=True
     )
-    pairing_key = bytes.fromhex(entry.data[CONF_PAIRING_KEY])
     serial_number = entry.data.get(CONF_SERIAL_NUMBER)
     battery_level = entry.data.get(CONF_BATTERY_LEVEL)
     device_type = DeviceType(entry.data[CONF_DEVICE_TYPE])
@@ -74,12 +91,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
         battery_level=battery_level,
     )
 
-    if ble_device:
-        try:
-            await client.start()
-        except (TimeoutError, BleakError, FlicProtocolError) as err:
-            raise ConfigEntryNotReady(f"Unable to connect to {address}") from err
-
     @callback
     def _async_bluetooth_callback(
         service_info: bluetooth.BluetoothServiceInfoBleak,
@@ -98,6 +109,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    if ble_device:
+        try:
+            await client.start()
+        except (TimeoutError, BleakError, FlicProtocolError) as err:
+            # Flic buttons only advertise while pressed. Do not block setup or
+            # HA will stay stuck on "Initializing"; reconnect when pressed.
+            _LOGGER.warning(
+                "Could not connect to %s during setup (%s); "
+                "press the button to connect via Bluetooth",
+                address,
+                err,
+            )
+    elif not client.is_connected:
+        _LOGGER.info(
+            "Flic %s is out of range; press the button to connect via Bluetooth",
+            address,
+        )
 
     # Reload entry when options change (e.g. push_twist_mode)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

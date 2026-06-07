@@ -19,6 +19,7 @@ from pyflic_ble import (
 from pyflic_ble.const import FLIC_SERVICE_UUID, PAIRING_TIMEOUT, TWIST_SERVICE_UUID
 import voluptuous as vol
 
+from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import (
     BluetoothScanningMode,
     BluetoothServiceInfoBleak,
@@ -272,47 +273,60 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._discovery_info.address,
                 self._device_type.value,
             )
+
+            address = self._discovery_info.address
+            ble_device = bluetooth.async_ble_device_from_address(
+                self.hass, address.upper(), connectable=True
+            )
+            if ble_device is None:
+                _LOGGER.warning(
+                    "Flic %s is no longer advertising; hold the button and retry",
+                    address,
+                )
+                errors["base"] = "cannot_connect"
+
             # Create client with detected device type
-            if not self._client:
+            if not errors and not self._client:
                 _LOGGER.debug(
                     "Creating FlicClient for device %s (type=%s)",
-                    self._discovery_info.device,
+                    address,
                     self._device_type.value,
                 )
                 self._client = FlicClient(
-                    address=self._discovery_info.device.address,
-                    ble_device=self._discovery_info.device,
+                    address=address,
+                    ble_device=ble_device,
                     device_type=self._device_type,
                 )
 
-            try:
-                await self._client.connect()
-                (
-                    pairing_id,
-                    pairing_key,
-                    serial_number,
-                    battery_level,
-                    sig_bits,
-                    _,
-                    _,
-                ) = await asyncio.wait_for(
-                    self._client.full_verify_pairing(),
-                    timeout=PAIRING_TIMEOUT,
-                )
-            except (TimeoutError, BleakError, FlicProtocolError):
-                errors["base"] = "cannot_connect"
-            except FlicPairingError:
-                errors["base"] = "pairing_failed"
-            except FlicAuthenticationError:
-                errors["base"] = "invalid_signature"
-            except Exception:
-                _LOGGER.exception("Unexpected exception during pairing")
-                errors["base"] = "unknown"
-            finally:
-                if self._client:
-                    with contextlib.suppress(Exception):
-                        await self._client.disconnect()
-                    self._client = None
+            if not errors:
+                try:
+                    await self._client.connect()
+                    (
+                        pairing_id,
+                        pairing_key,
+                        serial_number,
+                        battery_level,
+                        sig_bits,
+                        _,
+                        _,
+                    ) = await asyncio.wait_for(
+                        self._client.full_verify_pairing(),
+                        timeout=PAIRING_TIMEOUT,
+                    )
+                except (TimeoutError, BleakError, FlicProtocolError):
+                    errors["base"] = "cannot_connect"
+                except FlicPairingError:
+                    errors["base"] = "pairing_failed"
+                except FlicAuthenticationError:
+                    errors["base"] = "invalid_signature"
+                except Exception:
+                    _LOGGER.exception("Unexpected exception during pairing")
+                    errors["base"] = "unknown"
+                finally:
+                    if self._client:
+                        with contextlib.suppress(Exception):
+                            await self._client.disconnect()
+                        self._client = None
 
             if not errors:
                 final_device_type = (
