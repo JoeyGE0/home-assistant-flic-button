@@ -1,0 +1,23 @@
+{
+  "domain": "flic_button",
+  "name": "Flic Button",
+  "version": "0.1.0",
+  "bluetooth": [
+    {
+      "connectable": true,
+      "service_uuid": "00420000-8f59-4420-870d-84f3b617e493"
+    },
+    {
+      "connectable": true,
+      "service_uuid": "00c90000-2cbd-4f2a-a725-5ccd960ffb7d"
+    }
+  ],
+  "codeowners": ["@JoeyGE0"],
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters"],
+  "documentation": "https://github.com/JoeyGE0/home-assistant-flic-button",
+  "issue_tracker": "https://github.com/JoeyGE0/home-assistant-flic-button/issues",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "requirements": ["pyflic-ble==0.2.2"]
+}
