@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from pyflic_ble import FlicClient
+
 from homeassistant.components.bluetooth import (
     BluetoothScanningMode,
     async_process_advertisements,
@@ -11,6 +13,8 @@ from homeassistant.components.bluetooth import (
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+
+    from . import FlicButtonData
 
 from .const import CONF_PAIRING_ID, CONF_PAIRING_KEY
 
@@ -63,3 +67,15 @@ def validate_pairing_credentials(entry_data: dict[str, Any]) -> tuple[int, bytes
         return None
 
     return pairing_id, pairing_key
+
+
+def get_battery_voltage(data: FlicButtonData) -> float | None:
+    """Return the best-known battery voltage for a Flic device."""
+    client = data.client
+    if client.state.battery_voltage is not None:
+        return client.state.battery_voltage
+    if data.battery_level is not None:
+        return FlicClient.battery_raw_to_voltage(
+            int(data.battery_level), client.device_type
+        )
+    return None

@@ -32,3 +32,14 @@ FLIC_BUTTON_EVENT: Final = f"{DOMAIN}_event"
 
 # Options constants
 CONF_PUSH_TWIST_MODE: Final = "push_twist_mode"
+
+# Sensor entity keys
+SENSOR_BATTERY: Final = "battery"
+BINARY_SENSOR_BATTERY_LOW: Final = "battery_low"
+
+# Low-battery thresholds (volts). Flic 2 guidance: replace below 2.65 V.
+BATTERY_LOW_VOLTAGE: Final = {
+    DeviceType.FLIC2: 2.65,
+    DeviceType.DUO: 2.65,
+    DeviceType.TWIST: 2.4,
+}

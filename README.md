@@ -36,6 +36,8 @@ Works with the Home Assistant Bluetooth integration and **ESPHome Bluetooth prox
 5. Stand near your **ESPHome Bluetooth proxy** during pairing — active BLE connections go through it
 6. Use the **Button** event entity in automations (single, double, hold, etc.)
 
+Each device also exposes **Battery** (voltage in V) and **Battery low** entities. Battery updates when the button connects — press it near your proxy to refresh the reading.
+
 Flic buttons only advertise while pressed. The integration retries up to 3 times and reconnects automatically when you press the button later.
 
 ### ESPHome proxy tips

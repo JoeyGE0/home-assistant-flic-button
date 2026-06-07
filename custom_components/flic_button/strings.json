@@ -29,6 +29,11 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "battery_low": {
+        "name": "Battery low"
+      }
+    },
     "event": {
       "button": {
         "name": "Button",
@@ -118,6 +123,11 @@
             }
           }
         }
+      }
+    },
+    "sensor": {
+      "battery": {
+        "name": "Battery"
       }
     }
   },
