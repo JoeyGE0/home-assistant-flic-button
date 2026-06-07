@@ -6,7 +6,14 @@ import logging
 from dataclasses import dataclass
 
 from bleak import BleakError
-from pyflic_ble import DeviceType, FlicClient, FlicProtocolError, PushTwistMode
+from pyflic_ble import (
+    DeviceType,
+    FlicAuthenticationError,
+    FlicClient,
+    FlicPairingError,
+    FlicProtocolError,
+    PushTwistMode,
+)
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth.match import BluetoothCallbackMatcher
@@ -105,7 +112,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
     if ble_device:
         try:
             await client.start()
-        except (TimeoutError, BleakError, FlicProtocolError) as err:
+        except (
+            TimeoutError,
+            BleakError,
+            FlicProtocolError,
+            FlicAuthenticationError,
+            FlicPairingError,
+        ) as err:
             # Flic buttons only advertise while pressed. Finish setup and let
             # pyflic-ble reconnect when the button is pressed again.
             _LOGGER.warning(
