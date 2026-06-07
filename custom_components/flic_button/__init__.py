@@ -17,12 +17,11 @@ from homeassistant.core import HomeAssistant, callback
 from .const import (
     CONF_BATTERY_LEVEL,
     CONF_DEVICE_TYPE,
-    CONF_PAIRING_ID,
-    CONF_PAIRING_KEY,
     CONF_PUSH_TWIST_MODE,
     CONF_SERIAL_NUMBER,
     CONF_SIG_BITS,
 )
+from .helpers import validate_pairing_credentials
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,29 +46,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
     """Set up Flic Button from a config entry."""
 
     address: str = entry.data[CONF_ADDRESS]
-
-    if CONF_PAIRING_ID not in entry.data or CONF_PAIRING_KEY not in entry.data:
+    credentials = validate_pairing_credentials(entry.data)
+    if credentials is None:
         _LOGGER.error(
-            "Config entry for %s is missing pairing credentials; remove it and pair again",
+            "Config entry for %s has invalid pairing credentials; remove it and pair again",
             address,
         )
         return False
 
-    pairing_key = bytes.fromhex(entry.data[CONF_PAIRING_KEY])
-    if not pairing_key:
-        _LOGGER.error(
-            "Config entry for %s has empty pairing key; remove it and pair again",
-            address,
-        )
-        return False
-
+    pairing_id, pairing_key = credentials
     ble_device = bluetooth.async_ble_device_from_address(
         hass, address.upper(), connectable=True
     )
     serial_number = entry.data.get(CONF_SERIAL_NUMBER)
     battery_level = entry.data.get(CONF_BATTERY_LEVEL)
     device_type = DeviceType(entry.data[CONF_DEVICE_TYPE])
-    sig_bits = entry.data.get(CONF_SIG_BITS, 0)
+    sig_bits = int(entry.data.get(CONF_SIG_BITS, 0))
     push_twist_mode = PushTwistMode(
         entry.options.get(CONF_PUSH_TWIST_MODE, PushTwistMode.DEFAULT)
     )
@@ -77,7 +69,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
     client = FlicClient(
         address=address,
         ble_device=ble_device,
-        pairing_id=entry.data[CONF_PAIRING_ID],
+        pairing_id=pairing_id,
         pairing_key=pairing_key,
         serial_number=serial_number,
         device_type=device_type,
@@ -114,21 +106,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
         try:
             await client.start()
         except (TimeoutError, BleakError, FlicProtocolError) as err:
-            # Flic buttons only advertise while pressed. Do not block setup or
-            # HA will stay stuck on "Initializing"; reconnect when pressed.
+            # Flic buttons only advertise while pressed. Finish setup and let
+            # pyflic-ble reconnect when the button is pressed again.
             _LOGGER.warning(
                 "Could not connect to %s during setup (%s); "
-                "press the button to connect via Bluetooth",
+                "press the button near your Bluetooth proxy to connect",
                 address,
                 err,
             )
     elif not client.is_connected:
         _LOGGER.info(
-            "Flic %s is out of range; press the button to connect via Bluetooth",
+            "Flic %s is out of range; press the button near your Bluetooth proxy to connect",
             address,
         )
 
-    # Reload entry when options change (e.g. push_twist_mode)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     return True

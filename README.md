@@ -30,11 +30,30 @@ Works with the Home Assistant Bluetooth integration and **ESPHome Bluetooth prox
 ## Pair a button
 
 1. **Settings → Devices & services → Add integration → Flic Button**
-2. Hold the button for ~7 seconds until the LED flashes (pairing mode)
-3. Confirm the discovered device and complete pairing
-4. Use the **Button** event entity in automations (single, double, hold, etc.)
+2. **Factory-reset** the button first if it was ever used with the Flic app or flicd
+3. Hold the button for ~**7 seconds** until the LED flashes (pairing mode)
+4. Confirm discovery, then on the pair screen **submit while still holding**
+5. Stand near your **ESPHome Bluetooth proxy** during pairing — active BLE connections go through it
+6. Use the **Button** event entity in automations (single, double, hold, etc.)
 
-Flic buttons only advertise while pressed — keep holding during discovery if HA does not find it immediately.
+Flic buttons only advertise while pressed. The integration retries up to 3 times and reconnects automatically when you press the button later.
+
+### ESPHome proxy tips
+
+Pairing needs an **active** Bluetooth connection through your proxy. On the nearest ESP node:
+
+```yaml
+esp32:
+  framework:
+    type: esp-idf
+
+esp32_ble:
+  connection_timeout: 20s
+
+bluetooth_proxy:
+  active: true
+  connection_slots: 3
+```
 
 ## Upstream
 

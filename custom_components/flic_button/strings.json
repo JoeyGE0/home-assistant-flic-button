@@ -5,21 +5,22 @@
       "no_devices_found": "[%key:common::config_flow::abort::no_devices_found%]"
     },
     "error": {
-      "cannot_connect": "Failed to connect to the device. Make sure it is in range and try again.",
+      "cannot_connect": "Could not connect through your Bluetooth proxy. Hold the button within range of your nearest ESPHome proxy, then submit again.",
       "invalid_signature": "Invalid device signature during pairing.",
-      "pairing_failed": "Pairing failed. Please ensure the device is in pairing mode (LED flashing) and try again.",
+      "pairing_failed": "Pairing failed. Factory-reset the button if it was used with the Flic app or flicd, hold 7 seconds until the LED flashes, then try again.",
       "unknown": "An unexpected error occurred during pairing."
     },
     "progress": {
-      "wait_for_discovery": "Push and hold your Flic until it connects. This should take no longer than 10 seconds\u2026"
+      "wait_for_discovery": "Push and hold your Flic until it is discovered. This can take up to 60 seconds\u2026",
+      "pairing": "Connecting through your Bluetooth proxy and pairing. Keep holding the button\u2026"
     },
     "step": {
       "bluetooth_confirm": {
-        "description": "Set up {name}?",
+        "description": "Set up {name}? You will be asked to hold the button again on the next screen.",
         "title": "Discovered Flic device"
       },
       "pair": {
-        "description": "Push and hold your Flic until it connects. This should take no longer than 10 seconds. Then submit this form to complete pairing with {name}.",
+        "description": "Hold {name} for 7 seconds until the LED flashes, then submit and keep holding until pairing finishes. Stand near your ESPHome Bluetooth proxy.",
         "title": "Pair with Flic device"
       },
       "user": {
