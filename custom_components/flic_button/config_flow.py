@@ -222,28 +222,7 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
                     progress_action="pairing",
                     progress_task=self._pair_task,
                 )
-
-            try:
-                entry_data = self._pair_task.result()
-            except (TimeoutError, BleakError, FlicProtocolError):
-                self._pair_error = "cannot_connect"
-            except FlicPairingError:
-                self._pair_error = "pairing_failed"
-            except FlicAuthenticationError:
-                self._pair_error = "invalid_signature"
-            except Exception:
-                _LOGGER.exception("Unexpected exception during pairing")
-                self._pair_error = "unknown"
-            else:
-                final_device_type = DeviceType(entry_data[CONF_DEVICE_TYPE])
-                model_name = DEVICE_TYPE_MODEL_NAMES[final_device_type]
-                serial_number = entry_data[CONF_SERIAL_NUMBER]
-                return self.async_create_entry(
-                    title=f"{model_name} ({serial_number})",
-                    data=entry_data,
-                )
-            finally:
-                self._pair_task = None
+            return self.async_show_progress_done(next_step_id="pair_done")
 
         errors: dict[str, str] = {}
         if self._pair_error:
@@ -268,6 +247,37 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
                 "name": self._discovery_info.name or self._discovery_info.address
             },
         )
+
+    async def async_step_pair_done(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Finish pairing after the progress task completes."""
+        if self._discovery_info is None or self._pair_task is None:
+            return self.async_abort(reason="no_devices_found")
+
+        try:
+            entry_data = self._pair_task.result()
+        except (TimeoutError, BleakError, FlicProtocolError):
+            self._pair_error = "cannot_connect"
+        except FlicPairingError:
+            self._pair_error = "pairing_failed"
+        except FlicAuthenticationError:
+            self._pair_error = "invalid_signature"
+        except Exception:
+            _LOGGER.exception("Unexpected exception during pairing")
+            self._pair_error = "unknown"
+        else:
+            final_device_type = DeviceType(entry_data[CONF_DEVICE_TYPE])
+            model_name = DEVICE_TYPE_MODEL_NAMES[final_device_type]
+            serial_number = entry_data[CONF_SERIAL_NUMBER]
+            return self.async_create_entry(
+                title=f"{model_name} ({serial_number})",
+                data=entry_data,
+            )
+        finally:
+            self._pair_task = None
+
+        return await self.async_step_pair(None)
 
     async def _async_pair_device(self) -> dict[str, Any]:
         """Pair with retries while the button is held near a Bluetooth proxy."""
