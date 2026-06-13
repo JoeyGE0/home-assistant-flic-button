@@ -117,7 +117,7 @@ def _async_cleanup_stale_entities(
     normalized = normalize_address(address)
     to_remove: set[str] = set()
 
-    for entity in er.entities.values():
+    for entity in entity_registry.entities.values():
         if entity.platform != DOMAIN:
             continue
         if device is not None and entity.device_id == device.id:

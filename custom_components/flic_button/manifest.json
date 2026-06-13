@@ -1,7 +1,7 @@
 {
   "domain": "flic_button",
   "name": "Flic Button",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "bluetooth": [
     {
       "connectable": true,
