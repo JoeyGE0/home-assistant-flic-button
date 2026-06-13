@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import logging
-
 from pyflic_ble import FlicState
 
 from homeassistant.core import callback
@@ -13,15 +11,12 @@ from homeassistant.helpers.entity import Entity
 from . import FlicButtonData
 from .const import DEVICE_TYPE_MODEL_NAMES, DOMAIN
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class FlicButtonEntity(Entity):
     """Base entity for Flic Button integration."""
 
     _attr_has_entity_name = True
     _attr_should_poll = False
-    _unavailable_logged: bool = False
 
     def __init__(self, data: FlicButtonData) -> None:
         """Initialize the Flic button entity."""
@@ -35,15 +30,17 @@ class FlicButtonEntity(Entity):
             connections={(CONNECTION_BLUETOOTH, client.address)},
             manufacturer="Shortcut Labs",
             model=model_name,
+            name=client.state.device_name or None,
             serial_number=serial,
             sw_version=str(fw) if fw is not None else None,
         )
         self._client = client
+        self._data = data
 
     @property
     def available(self) -> bool:
-        """Return if entity is available."""
-        return self._client.state.connected
+        """Entities stay available after pairing."""
+        return True
 
     async def async_added_to_hass(self) -> None:
         """Register state callback when entity is added."""
@@ -55,14 +52,10 @@ class FlicButtonEntity(Entity):
 
     @callback
     def _handle_state_update(self, state: FlicState) -> None:
-        """Handle state updates from the client."""
-        is_available = state.connected
-
-        if not is_available and not self._unavailable_logged:
-            _LOGGER.info("%s is unavailable", self._client.address)
-            self._unavailable_logged = True
-        elif is_available and self._unavailable_logged:
-            _LOGGER.info("%s is back online", self._client.address)
-            self._unavailable_logged = False
-
+        """Refresh firmware version from documented FlicState fields."""
+        fw = state.firmware_version
+        if fw is not None and self._attr_device_info.get("sw_version") != str(fw):
+            info = dict(self._attr_device_info)
+            info["sw_version"] = str(fw)
+            self._attr_device_info = DeviceInfo(**info)
         self.async_write_ha_state()

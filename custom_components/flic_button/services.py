@@ -6,13 +6,14 @@ import logging
 from typing import TYPE_CHECKING
 
 import voluptuous as vol
-from pyflic_ble import DeviceType, FlicProtocolError
+from pyflic_ble import FlicProtocolError
 
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv, device_registry as dr
 
 from .const import CONF_ADDRESS, DOMAIN, SERVICE_SET_NAME, SERVICE_SET_TWIST_POSITION
+from .helpers import sync_ha_device_from_state
 
 if TYPE_CHECKING:
     from . import FlicButtonConfigEntry
@@ -83,8 +84,14 @@ async def async_set_twist_position(call: ServiceCall) -> None:
         raise HomeAssistantError("Service requires a Flic Twist device target")
 
     client, entry = _get_client_for_device(call.hass, device_ids[0])
-    if client.device_type != DeviceType.TWIST:
-        raise HomeAssistantError("set_twist_position only works on Flic Twist devices")
+    if not client.capabilities.has_rotation:
+        raise HomeAssistantError(
+            "set_twist_position only works on devices with rotation (Twist)"
+        )
+    if not client.capabilities.has_selector:
+        raise HomeAssistantError(
+            "set_twist_position only works on Flic Twist devices"
+        )
 
     mode_index: int = call.data["mode_index"]
     percentage: float = call.data["percentage"]
@@ -107,7 +114,7 @@ async def async_set_name(call: ServiceCall) -> None:
     if not device_ids:
         raise HomeAssistantError("Service requires a Flic Button device target")
 
-    client, _entry = _get_client_for_device(call.hass, device_ids[0])
+    client, entry = _get_client_for_device(call.hass, device_ids[0])
     name: str = call.data["name"]
 
     try:
@@ -117,3 +124,4 @@ async def async_set_name(call: ServiceCall) -> None:
 
     device_registry = dr.async_get(call.hass)
     device_registry.async_update_device(device_ids[0], name_by_user=new_name)
+    sync_ha_device_from_state(call.hass, entry)

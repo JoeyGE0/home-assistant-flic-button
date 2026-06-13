@@ -44,51 +44,22 @@ CORE_BUTTON_EVENT_TYPES: list[str] = [
     EVENT_TYPE_HOLD,
 ]
 
-FLIC2_BUTTON_DESCRIPTION = EventEntityDescription(
-    key=EVENT_CLASS_BUTTON,
-    translation_key=EVENT_CLASS_BUTTON,
-    event_types=CORE_BUTTON_EVENT_TYPES,
-    device_class=EventDeviceClass.BUTTON,
-)
-
-DUO_BUTTON_EVENT_TYPES: list[str] = [
-    *CORE_BUTTON_EVENT_TYPES,
+DUO_GESTURE_EVENT_TYPES: list[str] = [
     EVENT_TYPE_SWIPE_LEFT,
     EVENT_TYPE_SWIPE_RIGHT,
     EVENT_TYPE_SWIPE_UP,
     EVENT_TYPE_SWIPE_DOWN,
 ]
 
-DUO_SMALL_BUTTON_DESCRIPTION = EventEntityDescription(
-    key=f"{EVENT_CLASS_BUTTON}_small",
-    translation_key="button_small",
-    event_types=DUO_BUTTON_EVENT_TYPES,
-    device_class=EventDeviceClass.BUTTON,
-)
-
-DUO_BIG_BUTTON_DESCRIPTION = EventEntityDescription(
-    key=f"{EVENT_CLASS_BUTTON}_big",
-    translation_key="button_big",
-    event_types=DUO_BUTTON_EVENT_TYPES,
-    device_class=EventDeviceClass.BUTTON,
-)
-
 DUO_DIAL_EVENT_TYPES: list[str] = [
     EVENT_TYPE_ROTATE_CLOCKWISE,
     EVENT_TYPE_ROTATE_COUNTER_CLOCKWISE,
 ]
 
-DUO_SMALL_DIAL_DESCRIPTION = EventEntityDescription(
-    key=f"{EVENT_CLASS_DIAL}_small",
-    translation_key="dial_small",
-    event_types=DUO_DIAL_EVENT_TYPES,
-    device_class=EventDeviceClass.BUTTON,
-)
-
-DUO_BIG_DIAL_DESCRIPTION = EventEntityDescription(
-    key=f"{EVENT_CLASS_DIAL}_big",
-    translation_key="dial_big",
-    event_types=DUO_DIAL_EVENT_TYPES,
+FLIC2_BUTTON_DESCRIPTION = EventEntityDescription(
+    key=EVENT_CLASS_BUTTON,
+    translation_key=EVENT_CLASS_BUTTON,
+    event_types=CORE_BUTTON_EVENT_TYPES,
     device_class=EventDeviceClass.BUTTON,
 )
 
@@ -118,6 +89,34 @@ TWIST_DEFAULT_BUTTON_DESCRIPTION = EventEntityDescription(
 )
 
 
+def _duo_button_event_types(capabilities) -> list[str]:
+    """Build Duo button event types using documented capabilities."""
+    event_types = list(CORE_BUTTON_EVENT_TYPES)
+    if capabilities.has_gestures:
+        event_types.extend(DUO_GESTURE_EVENT_TYPES)
+    return event_types
+
+
+def _duo_button_description(key: str, translation_key: str, event_types: list[str]):
+    """Create a Duo button event entity description."""
+    return EventEntityDescription(
+        key=key,
+        translation_key=translation_key,
+        event_types=event_types,
+        device_class=EventDeviceClass.BUTTON,
+    )
+
+
+def _duo_dial_description(key: str, translation_key: str):
+    """Create a Duo dial event entity description."""
+    return EventEntityDescription(
+        key=key,
+        translation_key=translation_key,
+        event_types=DUO_DIAL_EVENT_TYPES,
+        device_class=EventDeviceClass.BUTTON,
+    )
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: FlicButtonConfigEntry,
@@ -145,18 +144,40 @@ async def async_setup_entry(
     elif capabilities.button_count == 1:
         entities.append(FlicButtonEventEntity(data, FLIC2_BUTTON_DESCRIPTION))
     else:
+        duo_button_types = _duo_button_event_types(capabilities)
         entities.append(
-            FlicButtonEventEntity(data, DUO_BIG_BUTTON_DESCRIPTION, button_index=0)
+            FlicButtonEventEntity(
+                data,
+                _duo_button_description(
+                    f"{EVENT_CLASS_BUTTON}_big", "button_big", duo_button_types
+                ),
+                button_index=0,
+            )
         )
         entities.append(
-            FlicButtonEventEntity(data, DUO_SMALL_BUTTON_DESCRIPTION, button_index=1)
+            FlicButtonEventEntity(
+                data,
+                _duo_button_description(
+                    f"{EVENT_CLASS_BUTTON}_small", "button_small", duo_button_types
+                ),
+                button_index=1,
+            )
         )
-        entities.append(
-            FlicButtonDialEventEntity(data, DUO_BIG_DIAL_DESCRIPTION, button_index=0)
-        )
-        entities.append(
-            FlicButtonDialEventEntity(data, DUO_SMALL_DIAL_DESCRIPTION, button_index=1)
-        )
+        if capabilities.has_rotation:
+            entities.append(
+                FlicButtonDialEventEntity(
+                    data,
+                    _duo_dial_description(f"{EVENT_CLASS_DIAL}_big", "dial_big"),
+                    button_index=0,
+                )
+            )
+            entities.append(
+                FlicButtonDialEventEntity(
+                    data,
+                    _duo_dial_description(f"{EVENT_CLASS_DIAL}_small", "dial_small"),
+                    button_index=1,
+                )
+            )
 
     async_add_entities(entities)
 
@@ -178,11 +199,6 @@ class FlicButtonEventEntity(FlicButtonEntity, EventEntity):
         self._button_index = button_index
         self._is_twist = is_twist
         self._attr_unique_id = f"{self._client.address}-{description.key}"
-
-    @property
-    def available(self) -> bool:
-        """Event entities stay available after pairing."""
-        return True
 
     async def async_added_to_hass(self) -> None:
         """Register event callbacks when entity is added."""
@@ -251,11 +267,6 @@ class FlicButtonDialEventEntity(FlicButtonEntity, EventEntity):
         self.entity_description = description
         self._button_index = button_index
         self._attr_unique_id = f"{self._client.address}-{description.key}"
-
-    @property
-    def available(self) -> bool:
-        """Dial event entities stay available after pairing."""
-        return True
 
     async def async_added_to_hass(self) -> None:
         """Register rotate callbacks when entity is added."""

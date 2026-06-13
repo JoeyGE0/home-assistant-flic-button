@@ -10,17 +10,18 @@ from homeassistant.components.bluetooth import (
     BluetoothScanningMode,
     async_process_advertisements,
 )
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
-
-    from . import FlicButtonData
+    from . import FlicButtonConfigEntry, FlicButtonData
 
 from .const import (
     BATTERY_FULL_VOLTAGE,
     BATTERY_LOW_VOLTAGE,
     CONF_PAIRING_ID,
     CONF_PAIRING_KEY,
+    DOMAIN,
 )
 
 PAIR_CONNECT_ATTEMPTS = 3
@@ -104,6 +105,12 @@ def is_battery_low(voltage: float, device_type: DeviceType) -> bool:
     return voltage < BATTERY_LOW_VOLTAGE[device_type]
 
 
+def _notify_callbacks(callbacks: list) -> None:
+    """Invoke registered entity callbacks."""
+    for cb in callbacks:
+        cb()
+
+
 def notify_twist_state_update(
     data: FlicButtonData, event_type: str, event_data: dict[str, Any]
 ) -> None:
@@ -120,5 +127,48 @@ def notify_twist_state_update(
     if (selector_index := event_data.get("selector_index")) is not None:
         data.selector_index = int(selector_index)
 
-    for cb in data.twist_state_callbacks:
-        cb()
+    _notify_callbacks(data.twist_state_callbacks)
+
+
+def notify_dial_state_update(data: FlicButtonData, event_data: dict[str, Any]) -> None:
+    """Update cached Duo dial percentage from documented rotate event fields."""
+    button_index = event_data.get("button_index")
+    dial_percentage = event_data.get("dial_percentage")
+    if button_index is None or dial_percentage is None:
+        return
+    data.dial_percentage[int(button_index)] = float(dial_percentage)
+    _notify_callbacks(data.dial_state_callbacks)
+
+
+def notify_last_event(
+    data: FlicButtonData, event_type: str, event_data: dict[str, Any]
+) -> None:
+    """Store the most recent event for the last-event sensor."""
+    data.last_event_type = event_type
+    data.last_event_data = dict(event_data)
+    _notify_callbacks(data.last_event_callbacks)
+
+
+@callback
+def sync_ha_device_from_state(
+    hass: HomeAssistant, entry: FlicButtonConfigEntry
+) -> None:
+    """Sync HA device registry from documented FlicState fields."""
+    data = entry.runtime_data
+    client = data.client
+    state = client.state
+
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get_device(identifiers={(DOMAIN, client.address)})
+    if device is None:
+        return
+
+    updates: dict[str, str] = {}
+    if state.firmware_version is not None:
+        updates["sw_version"] = str(state.firmware_version)
+    if state.device_name and device.name_by_user is None:
+        updates["name"] = state.device_name
+
+    if updates:
+        device_registry.async_update_device(device.id, **updates)
+

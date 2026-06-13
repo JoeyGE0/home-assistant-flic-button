@@ -128,6 +128,11 @@
         }
       }
     },
+    "binary_sensor": {
+      "connected": {
+        "name": "Connected"
+      }
+    },
     "sensor": {
       "battery": {
         "name": "Battery"
@@ -135,11 +140,38 @@
       "battery_voltage": {
         "name": "Battery voltage"
       },
+      "dial_position_big": {
+        "name": "Big dial position"
+      },
+      "dial_position_small": {
+        "name": "Small dial position"
+      },
+      "last_event": {
+        "name": "Last event",
+        "state_attributes": {
+          "timestamp_ms": { "name": "Timestamp (ms)" },
+          "was_queued": { "name": "Was queued" },
+          "button_index": { "name": "Button index" },
+          "dial_percentage": { "name": "Dial percentage" },
+          "rpm": { "name": "RPM" },
+          "angle_degrees": { "name": "Angle (degrees)" },
+          "detent_crossings": { "name": "Detent crossings" },
+          "twist_mode_index": { "name": "Twist mode index" },
+          "mode_percentage": { "name": "Mode percentage" },
+          "selector_index": { "name": "Selector index" },
+          "previous_index": { "name": "Previous selector index" }
+        }
+      },
       "selector": {
         "name": "Selector"
       },
       "twist_position": {
         "name": "Position"
+      }
+    },
+    "text": {
+      "device_name": {
+        "name": "Device name"
       }
     }
   },

@@ -34,11 +34,16 @@ FLIC_BUTTON_EVENT: Final = f"{DOMAIN}_event"
 # Options constants
 CONF_PUSH_TWIST_MODE: Final = "push_twist_mode"
 
-# Sensor entity keys
+# Entity keys
 SENSOR_BATTERY: Final = "battery"
 SENSOR_BATTERY_VOLTAGE: Final = "battery_voltage"
 SENSOR_TWIST_POSITION: Final = "twist_position"
 SENSOR_SELECTOR: Final = "selector"
+SENSOR_DIAL_BIG: Final = "dial_position_big"
+SENSOR_DIAL_SMALL: Final = "dial_position_small"
+SENSOR_LAST_EVENT: Final = "last_event"
+BINARY_SENSOR_CONNECTED: Final = "connected"
+TEXT_DEVICE_NAME: Final = "device_name"
 
 # Service names
 SERVICE_SET_TWIST_POSITION: Final = "set_twist_position"

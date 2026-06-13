@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from typing import Any
 
 from bleak import BleakError
 from pyflic_ble import (
@@ -12,8 +13,10 @@ from pyflic_ble import (
     FlicClient,
     FlicPairingError,
     FlicProtocolError,
+    FlicState,
     PushTwistMode,
 )
+from pyflic_ble.const import EVENT_TYPE_SELECTOR_CHANGED
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth.match import BluetoothCallbackMatcher
@@ -30,14 +33,22 @@ from .const import (
     CONF_SIG_BITS,
     DOMAIN,
 )
-from .helpers import validate_pairing_credentials
+from .helpers import (
+    notify_dial_state_update,
+    notify_last_event,
+    notify_twist_state_update,
+    sync_ha_device_from_state,
+    validate_pairing_credentials,
+)
 from .services import async_register_services
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
     Platform.EVENT,
     Platform.SENSOR,
+    Platform.TEXT,
 ]
 
 
@@ -52,7 +63,16 @@ class FlicButtonData:
     selector_index: int | None = None
     mode_percentage: float | None = None
     twist_mode_index: int | None = None
+    dial_percentage: dict[int, float | None] = field(
+        default_factory=lambda: {0: None, 1: None}
+    )
+    last_event_type: str | None = None
+    last_event_data: dict[str, Any] | None = None
     twist_state_callbacks: list = field(default_factory=list)
+    dial_state_callbacks: list = field(default_factory=list)
+    last_event_callbacks: list = field(default_factory=list)
+    state_callbacks: list = field(default_factory=list)
+    was_connected: bool = False
 
 
 type FlicButtonConfigEntry = ConfigEntry[FlicButtonData]
@@ -105,6 +125,55 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
         serial_number=serial_number,
         battery_level=battery_level,
     )
+    data = entry.runtime_data
+
+    def _on_disconnect() -> None:
+        _LOGGER.info(
+            "Flic %s disconnected; pyflic-ble will reconnect automatically",
+            address,
+        )
+
+    client.on_disconnect = _on_disconnect
+
+    @callback
+    def _async_on_client_state(state: FlicState) -> None:
+        """Sync HA device info and notify connection entities on state changes."""
+        if state.connected and not data.was_connected:
+            _LOGGER.info("Flic %s connected", address)
+        sync_ha_device_from_state(hass, entry)
+        data.was_connected = state.connected
+        for cb in data.state_callbacks:
+            cb()
+
+    @callback
+    def _async_track_button_event(event_type: str, event_data: dict[str, Any]) -> None:
+        """Track button events for last-event and Twist state sensors."""
+        notify_last_event(data, event_type, event_data)
+        notify_twist_state_update(data, event_type, event_data)
+
+    @callback
+    def _async_track_rotate_event(event_type: str, event_data: dict[str, Any]) -> None:
+        """Track rotate events for last-event, Twist, and Duo dial sensors."""
+        notify_last_event(data, event_type, event_data)
+        notify_twist_state_update(data, event_type, event_data)
+        notify_dial_state_update(data, event_data)
+
+    def _on_selector_change(selector_index: int, extra_data: dict[str, Any]) -> None:
+        """Handle documented Twist selector change callback."""
+        data.selector_index = selector_index
+        event_data = {"selector_index": selector_index, **extra_data}
+        notify_last_event(data, EVENT_TYPE_SELECTOR_CHANGED, event_data)
+        notify_twist_state_update(data, EVENT_TYPE_SELECTOR_CHANGED, event_data)
+
+    client.on_selector_change = _on_selector_change
+
+    entry.async_on_remove(client.register_state_callback(_async_on_client_state))
+    entry.async_on_remove(
+        client.register_button_event_callback(_async_track_button_event)
+    )
+    entry.async_on_remove(
+        client.register_rotate_event_callback(_async_track_rotate_event)
+    )
 
     @callback
     def _async_bluetooth_callback(
@@ -128,6 +197,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
     if ble_device:
         try:
             await client.start()
+            sync_ha_device_from_state(hass, entry)
+            data.was_connected = client.state.connected
         except (
             TimeoutError,
             BleakError,
