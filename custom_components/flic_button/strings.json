@@ -1,30 +1,35 @@
 {
   "config": {
+    "flow_title": "{name}",
     "abort": {
-      "already_configured": "This Flic device is already configured.",
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "no_devices_found": "[%key:common::config_flow::abort::no_devices_found%]"
+    },
+    "create_entry": {
+      "default": "Device paired. Press the button near your Bluetooth proxy to refresh battery and connection status."
     },
     "error": {
       "cannot_connect": "Could not connect through your Bluetooth proxy. Hold the button within range of your nearest ESPHome proxy, then submit again.",
-      "invalid_signature": "Invalid device signature during pairing.",
-      "pairing_failed": "Pairing failed. Factory-reset the button if it was used with the Flic app or flicd, hold 7 seconds until the LED flashes, then try again.",
-      "unknown": "An unexpected error occurred during pairing."
+      "invalid_signature": "Invalid device signature during pairing. Factory-reset the button if it was used with the Flic app or flicd, then try again.",
+      "pairing_failed": "Pairing failed. Factory-reset the button if it was used with the Flic app or flicd, hold 7 seconds until the LED flashes, submit, and keep holding until pairing finishes.",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "progress": {
-      "wait_for_discovery": "Push and hold your Flic until it is discovered. This can take up to 60 seconds\u2026",
+      "wait_for_discovery": "Listening for your Flic button. Keep holding the button until it is found (up to {timeout} seconds)\u2026",
       "pairing": "Connecting through your Bluetooth proxy and pairing. Keep holding the button\u2026"
     },
     "step": {
       "bluetooth_confirm": {
-        "description": "Set up {name}? You will be asked to hold the button again on the next screen.",
+        "description": "Set up **{name}**?\n\nOn the next screen you will complete pairing. Hold the button until pairing finishes and stay near your ESPHome Bluetooth proxy.",
         "title": "Discovered Flic device"
       },
       "pair": {
-        "description": "Hold {name} for 7 seconds until the LED flashes, then submit and keep holding until pairing finishes. Stand near your ESPHome Bluetooth proxy.",
+        "description": "Pair with **{name}**:\n\n1. Make sure the LED is **flashing** (pairing mode). Hold the button for **7 seconds** if needed.\n2. Select **Submit** below.\n3. **Keep holding** the button until pairing finishes.\n\nStay near your ESPHome Bluetooth proxy during pairing.",
         "title": "Pair with Flic device"
       },
       "user": {
-        "title": "Pair with Flic device"
+        "description": "Before you continue:\n\n1. **Factory-reset** the button if it was ever used with the Flic app or flicd (hold ~15 seconds until the LED flashes rapidly).\n2. Put the button in **pairing mode** — hold for **7 seconds** until the LED flashes slowly.\n3. Stand within range of your **ESPHome Bluetooth proxy** (or local Bluetooth adapter).\n\nWhen you select **Submit**, Home Assistant will listen for the button. **Keep holding** the button until it is found (up to {timeout} seconds).",
+        "title": "Prepare your Flic button"
       }
     }
   },
@@ -148,23 +153,8 @@
       },
       "dial_position_small": {
         "name": "Small dial position"
-      },
-      "last_event": {
-        "name": "Last event",
-        "state_attributes": {
-          "timestamp_ms": { "name": "Timestamp (ms)" },
-          "was_queued": { "name": "Was queued" },
-          "button_index": { "name": "Button index" },
-          "dial_percentage": { "name": "Dial percentage" },
-          "rpm": { "name": "RPM" },
-          "angle_degrees": { "name": "Angle (degrees)" },
-          "detent_crossings": { "name": "Detent crossings" },
-          "twist_mode_index": { "name": "Twist mode index" },
-          "mode_percentage": { "name": "Mode percentage" },
-          "selector_index": { "name": "Selector index" },
-          "previous_index": { "name": "Previous selector index" }
-        }
-      },
+      }
+    },
       "selector": {
         "name": "Selector"
       },

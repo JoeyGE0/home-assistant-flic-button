@@ -11,10 +11,9 @@ from pyflic_ble import FlicProtocolError
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import config_validation as cv, device_registry as dr
+from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN, SERVICE_SET_NAME, SERVICE_SET_TWIST_POSITION
-from .helpers import sync_ha_device_from_state
 
 if TYPE_CHECKING:
     from . import FlicButtonConfigEntry
@@ -123,6 +122,5 @@ async def async_set_name(call: ServiceCall) -> None:
     except FlicProtocolError as err:
         raise HomeAssistantError(str(err)) from err
 
-    device_registry = dr.async_get(call.hass)
-    device_registry.async_update_device(device_ids[0], name_by_user=new_name)
-    sync_ha_device_from_state(call.hass, entry)
+    for cb in entry.runtime_data.state_callbacks:
+        cb()

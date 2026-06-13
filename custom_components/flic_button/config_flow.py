@@ -60,7 +60,7 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Flic Button."""
 
     VERSION = 1
-    MINOR_VERSION = 1
+    MINOR_VERSION = 3
 
     def __init__(self) -> None:
         """Initialize the config flow."""
@@ -114,6 +114,10 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
         else:
             self._device_type = DeviceType.FLIC2
 
+    def _pairing_description_placeholders(self) -> dict[str, str]:
+        """Shared placeholders for pairing instructions."""
+        return {"timeout": str(int(PAIRING_TIMEOUT))}
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -124,6 +128,7 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
                     step_id="user",
                     progress_action="wait_for_discovery",
                     progress_task=self._discovery_task,
+                    description_placeholders=self._pairing_description_placeholders(),
                 )
 
             try:
@@ -139,6 +144,13 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
         if self._discovery_info is not None:
             return await self.async_step_pair(None)
 
+        if user_input is None:
+            self._set_confirm_only()
+            return self.async_show_form(
+                step_id="user",
+                description_placeholders=self._pairing_description_placeholders(),
+            )
+
         self._discovery_task = self.hass.async_create_task(
             self._async_wait_for_flic_device(), eager_start=False
         )
@@ -147,6 +159,7 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             progress_action="wait_for_discovery",
             progress_task=self._discovery_task,
+            description_placeholders=self._pairing_description_placeholders(),
         )
 
     async def async_step_discovery_done(
@@ -201,9 +214,13 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is None:
             self._set_confirm_only()
             name = self._discovery_info.name or self._discovery_info.address
+            placeholders = {
+                "name": name,
+                **self._pairing_description_placeholders(),
+            }
             return self.async_show_form(
                 step_id="bluetooth_confirm",
-                description_placeholders={"name": name},
+                description_placeholders=placeholders,
             )
 
         return await self.async_step_pair(None)
@@ -221,6 +238,7 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
                     step_id="pair",
                     progress_action="pairing",
                     progress_task=self._pair_task,
+                    description_placeholders=self._pairing_description_placeholders(),
                 )
             return self.async_show_progress_done(next_step_id="pair_done")
 
@@ -238,13 +256,16 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
                 step_id="pair",
                 progress_action="pairing",
                 progress_task=self._pair_task,
+                description_placeholders=self._pairing_description_placeholders(),
             )
 
+        name = self._discovery_info.name or self._discovery_info.address
         return self.async_show_form(
             step_id="pair",
             errors=errors,
             description_placeholders={
-                "name": self._discovery_info.name or self._discovery_info.address
+                "name": name,
+                **self._pairing_description_placeholders(),
             },
         )
 
@@ -273,6 +294,7 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(
                 title=f"{model_name} ({serial_number})",
                 data=entry_data,
+                description="default",
             )
         finally:
             self._pair_task = None

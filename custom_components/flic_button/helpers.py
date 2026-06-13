@@ -12,7 +12,7 @@ from homeassistant.components.bluetooth import (
 )
 from homeassistant.const import CONF_ADDRESS, CONF_DEVICE_ID, CONF_TYPE
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr
 
 if TYPE_CHECKING:
     from . import FlicButtonConfigEntry, FlicButtonData
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 from .const import (
     BATTERY_FULL_VOLTAGE,
     BATTERY_LOW_VOLTAGE,
+    CONF_INITIAL_NAME_SYNCED,
     CONF_PAIRING_ID,
     CONF_PAIRING_KEY,
     CONF_SUBTYPE,
@@ -28,7 +29,6 @@ from .const import (
     SUBTYPE_BIG,
     SUBTYPE_BUTTON,
     SUBTYPE_SMALL,
-    TEXT_DEVICE_NAME,
 )
 
 PAIR_CONNECT_ATTEMPTS = 3
@@ -147,15 +147,6 @@ def notify_dial_state_update(data: FlicButtonData, event_data: dict[str, Any]) -
     _notify_callbacks(data.dial_state_callbacks)
 
 
-def notify_last_event(
-    data: FlicButtonData, event_type: str, event_data: dict[str, Any]
-) -> None:
-    """Store the most recent event for the last-event sensor."""
-    data.last_event_type = event_type
-    data.last_event_data = dict(event_data)
-    _notify_callbacks(data.last_event_callbacks)
-
-
 def notify_rssi_update(
     data: FlicButtonData, rssi: int, source: str
 ) -> None:
@@ -166,16 +157,16 @@ def notify_rssi_update(
 
 
 @callback
-def is_device_rename_enabled(hass: HomeAssistant, entry: FlicButtonConfigEntry) -> bool:
-    """Return True when the optional on-device rename entity is enabled."""
-    entity_registry = er.async_get(hass)
-    unique_id = f"{entry.data[CONF_ADDRESS]}-{TEXT_DEVICE_NAME}"
-    entity_id = entity_registry.async_get_entity_id("text", DOMAIN, unique_id)
-    if entity_id is None:
-        return False
-    if (reg_entry := entity_registry.async_get(entity_id)) is None:
-        return False
-    return not reg_entry.disabled
+def _mark_initial_name_synced(
+    hass: HomeAssistant, entry: FlicButtonConfigEntry
+) -> None:
+    """Persist that HA device naming must not be auto-overwritten again."""
+    if entry.data.get(CONF_INITIAL_NAME_SYNCED):
+        return
+    hass.config_entries.async_update_entry(
+        entry,
+        data={**entry.data, CONF_INITIAL_NAME_SYNCED: True},
+    )
 
 
 @callback
@@ -196,16 +187,16 @@ def sync_ha_device_from_state(
     if state.firmware_version is not None:
         updates["sw_version"] = str(state.firmware_version)
 
-    if (
+    # Only copy the Flic on-device name into the HA device label once, and never
+    # after the user has set a device name in Home Assistant.
+    if device.name_by_user is not None:
+        _mark_initial_name_synced(hass, entry)
+    elif (
         state.device_name
-        and device.name_by_user is None
-        and (
-            is_device_rename_enabled(hass, entry)
-            or not data.initial_name_synced
-        )
+        and not entry.data.get(CONF_INITIAL_NAME_SYNCED)
     ):
         updates["name"] = state.device_name
-        data.initial_name_synced = True
+        _mark_initial_name_synced(hass, entry)
 
     if updates:
         device_registry.async_update_device(device.id, **updates)
@@ -268,10 +259,10 @@ def fire_device_automation_event(
     hass.bus.async_fire(
         FLIC_BUTTON_EVENT,
         {
+            **event_data,
             CONF_DEVICE_ID: device.id,
             CONF_TYPE: event_type,
             CONF_SUBTYPE: subtype,
-            **event_data,
         },
     )
 

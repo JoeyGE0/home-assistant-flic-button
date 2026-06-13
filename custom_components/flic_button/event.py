@@ -37,7 +37,7 @@ from .helpers import notify_twist_state_update
 
 PARALLEL_UPDATES = 0
 
-# Semantic button events only (no raw up/down press-release lifecycle).
+# Semantic button events only (Shelly/Hue/Z2M style — not raw up/down).
 CORE_BUTTON_EVENT_TYPES: list[str] = [
     EVENT_TYPE_CLICK,
     EVENT_TYPE_DOUBLE_CLICK,
@@ -200,6 +200,7 @@ class FlicButtonEventEntity(FlicButtonEntity, EventEntity):
         self._is_twist = is_twist
         self._attr_translation_key = description.translation_key
         self._attr_unique_id = f"{self._client.address}-{description.key}"
+        self._attr_suggested_object_id = description.translation_key
 
     async def async_added_to_hass(self) -> None:
         """Register event callbacks when entity is added."""
@@ -269,6 +270,7 @@ class FlicButtonDialEventEntity(FlicButtonEntity, EventEntity):
         self._button_index = button_index
         self._attr_translation_key = description.translation_key
         self._attr_unique_id = f"{self._client.address}-{description.key}"
+        self._attr_suggested_object_id = description.translation_key
 
     async def async_added_to_hass(self) -> None:
         """Register rotate callbacks when entity is added."""

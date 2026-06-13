@@ -23,6 +23,7 @@ CONF_DEVICE_TYPE: Final = "device_type"
 CONF_SIG_BITS: Final = (
     "sig_bits"  # Ed25519 signature variant (0-3) for Twist quick verify
 )
+CONF_INITIAL_NAME_SYNCED: Final = "initial_name_synced"
 
 # Event classes
 EVENT_CLASS_BUTTON: Final = "button"
@@ -48,7 +49,6 @@ SENSOR_TWIST_POSITION: Final = "twist_position"
 SENSOR_SELECTOR: Final = "selector"
 SENSOR_DIAL_BIG: Final = "dial_position_big"
 SENSOR_DIAL_SMALL: Final = "dial_position_small"
-SENSOR_LAST_EVENT: Final = "last_event"
 BINARY_SENSOR_CONNECTED: Final = "connected"
 TEXT_DEVICE_NAME: Final = "device_name"
 

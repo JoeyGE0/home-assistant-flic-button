@@ -9,13 +9,11 @@ from pyflic_ble import FlicProtocolError, FlicState
 from homeassistant.components.text import TextEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import FlicButtonConfigEntry, FlicButtonData
-from .const import DOMAIN, TEXT_DEVICE_NAME
+from .const import TEXT_DEVICE_NAME
 from .entity import FlicButtonEntity
-from .helpers import sync_ha_device_from_state
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,6 +44,7 @@ class FlicDeviceNameText(FlicButtonEntity, TextEntity):
         self._entry = entry
         self._last_device_name: str | None = data.client.state.device_name
         self._attr_unique_id = f"{self._client.address}-{TEXT_DEVICE_NAME}"
+        self._attr_suggested_object_id = TEXT_DEVICE_NAME
 
     @property
     def native_value(self) -> str:
@@ -65,14 +64,6 @@ class FlicDeviceNameText(FlicButtonEntity, TextEntity):
             raise HomeAssistantError(str(err)) from err
 
         self._last_device_name = new_name
-        device_registry = dr.async_get(self.hass)
-        device = device_registry.async_get_device(
-            identifiers={(DOMAIN, self._client.address)}
-        )
-        if device is not None:
-            device_registry.async_update_device(device.id, name_by_user=new_name)
-
-        sync_ha_device_from_state(self.hass, self._entry)
         self.async_write_ha_state()
 
     @callback

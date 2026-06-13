@@ -16,18 +16,25 @@ from pyflic_ble import (
     FlicState,
     PushTwistMode,
 )
-from pyflic_ble.const import EVENT_TYPE_SELECTOR_CHANGED
+from pyflic_ble.const import (
+    EVENT_TYPE_DOWN,
+    EVENT_TYPE_SELECTOR_CHANGED,
+    EVENT_TYPE_UP,
+)
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth.match import BluetoothCallbackMatcher
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     CONF_BATTERY_LEVEL,
     CONF_DEVICE_TYPE,
+    CONF_INITIAL_NAME_SYNCED,
     CONF_PUSH_TWIST_MODE,
     CONF_SERIAL_NUMBER,
     CONF_SIG_BITS,
@@ -36,7 +43,6 @@ from .const import (
 from .helpers import (
     fire_device_automation_event,
     notify_dial_state_update,
-    notify_last_event,
     notify_rssi_update,
     notify_twist_state_update,
     sync_ha_device_from_state,
@@ -68,26 +74,58 @@ class FlicButtonData:
     dial_percentage: dict[int, float | None] = field(
         default_factory=lambda: {0: None, 1: None}
     )
-    last_event_type: str | None = None
-    last_event_data: dict[str, Any] | None = None
     twist_state_callbacks: list = field(default_factory=list)
     dial_state_callbacks: list = field(default_factory=list)
-    last_event_callbacks: list = field(default_factory=list)
     state_callbacks: list = field(default_factory=list)
     rssi_callbacks: list = field(default_factory=list)
     was_connected: bool = False
-    initial_name_synced: bool = False
     last_rssi: int | None = None
     last_rssi_source: str | None = None
 
 
 type FlicButtonConfigEntry = ConfigEntry[FlicButtonData]
 
+# Raw BLE press lifecycle — not exposed on event entities or device automations.
+_RAW_PRESS_EVENTS = frozenset({EVENT_TYPE_UP, EVENT_TYPE_DOWN})
+
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Flic Button integration."""
     hass.data.setdefault(DOMAIN, {})
     async_register_services(hass)
+    return True
+
+
+def _async_cleanup_stale_entities(hass: HomeAssistant, address: str) -> None:
+    """Remove legacy entities so they recreate with proper IDs and names."""
+    entity_registry = er.async_get(hass)
+    address = address.upper()
+
+    for entity in er.entities.values():
+        if entity.platform != DOMAIN or not entity.unique_id:
+            continue
+        if not entity.unique_id.startswith(f"{address}-"):
+            continue
+        entity_registry.async_remove(entity.entity_id)
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate config entry."""
+    if entry.version == 1 and (entry.minor_version or 0) < 3:
+        _async_cleanup_stale_entities(hass, entry.data[CONF_ADDRESS])
+
+        device_registry = dr.async_get(hass)
+        if device := device_registry.async_get_device(
+            identifiers={(DOMAIN, entry.data[CONF_ADDRESS])}
+        ):
+            data = dict(entry.data)
+            if device.name_by_user is not None:
+                data[CONF_INITIAL_NAME_SYNCED] = True
+            hass.config_entries.async_update_entry(
+                entry, data=data, minor_version=3
+            )
+        else:
+            hass.config_entries.async_update_entry(entry, minor_version=3)
     return True
 
 
@@ -153,15 +191,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
 
     @callback
     def _async_track_button_event(event_type: str, event_data: dict[str, Any]) -> None:
-        """Track button events for last-event and Twist state sensors."""
-        notify_last_event(data, event_type, event_data)
+        """Track button events for Twist state and device automations."""
         notify_twist_state_update(data, event_type, event_data)
-        fire_device_automation_event(hass, entry, event_type, event_data)
+        if event_type not in _RAW_PRESS_EVENTS:
+            fire_device_automation_event(hass, entry, event_type, event_data)
 
     @callback
     def _async_track_rotate_event(event_type: str, event_data: dict[str, Any]) -> None:
-        """Track rotate events for last-event, Twist, and Duo dial sensors."""
-        notify_last_event(data, event_type, event_data)
+        """Track rotate events for Twist, Duo dial, and device automations."""
         notify_twist_state_update(data, event_type, event_data)
         notify_dial_state_update(data, event_data)
         fire_device_automation_event(hass, entry, event_type, event_data)
@@ -170,7 +207,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
         """Handle documented Twist selector change callback."""
         data.selector_index = selector_index
         event_data = {"selector_index": selector_index, **extra_data}
-        notify_last_event(data, EVENT_TYPE_SELECTOR_CHANGED, event_data)
         notify_twist_state_update(data, EVENT_TYPE_SELECTOR_CHANGED, event_data)
         fire_device_automation_event(hass, entry, EVENT_TYPE_SELECTOR_CHANGED, event_data)
 
