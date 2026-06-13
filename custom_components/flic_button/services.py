@@ -8,11 +8,12 @@ from typing import TYPE_CHECKING
 import voluptuous as vol
 from pyflic_ble import FlicProtocolError
 
+from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv, device_registry as dr
 
-from .const import CONF_ADDRESS, DOMAIN, SERVICE_SET_NAME, SERVICE_SET_TWIST_POSITION
+from .const import DOMAIN, SERVICE_SET_NAME, SERVICE_SET_TWIST_POSITION
 from .helpers import sync_ha_device_from_state
 
 if TYPE_CHECKING:
