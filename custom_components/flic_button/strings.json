@@ -29,11 +29,6 @@
     }
   },
   "entity": {
-    "binary_sensor": {
-      "battery_low": {
-        "name": "Battery low"
-      }
-    },
     "event": {
       "button": {
         "name": "Button",
@@ -42,9 +37,7 @@
             "state": {
               "click": "Single push",
               "double_click": "Double push",
-              "down": "Down",
-              "hold": "Hold",
-              "up": "Up"
+              "hold": "Hold"
             }
           }
         }
@@ -56,15 +49,11 @@
             "state": {
               "click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::click%]",
               "double_click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::double_click%]",
-              "down": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::down%]",
               "hold": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::hold%]",
-              "rotate_clockwise": "Rotated clockwise",
-              "rotate_counter_clockwise": "Rotated counter-clockwise",
               "swipe_down": "Swipe down",
               "swipe_left": "Swipe left",
               "swipe_right": "Swipe right",
-              "swipe_up": "Swipe up",
-              "up": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::up%]"
+              "swipe_up": "Swipe up"
             }
           }
         }
@@ -76,15 +65,11 @@
             "state": {
               "click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::click%]",
               "double_click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::double_click%]",
-              "down": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::down%]",
               "hold": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::hold%]",
-              "rotate_clockwise": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::rotate_clockwise%]",
-              "rotate_counter_clockwise": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::rotate_counter_clockwise%]",
               "swipe_down": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::swipe_down%]",
               "swipe_left": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::swipe_left%]",
               "swipe_right": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::swipe_right%]",
-              "swipe_up": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::swipe_up%]",
-              "up": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::up%]"
+              "swipe_up": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::swipe_up%]"
             }
           }
         }
@@ -96,12 +81,10 @@
             "state": {
               "click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::click%]",
               "double_click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::double_click%]",
-              "down": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::down%]",
               "hold": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::hold%]",
-              "rotate_clockwise": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::rotate_clockwise%]",
-              "rotate_counter_clockwise": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::rotate_counter_clockwise%]",
-              "selector_changed": "Selector changed",
-              "up": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::up%]"
+              "rotate_clockwise": "Rotated clockwise",
+              "rotate_counter_clockwise": "Rotated counter-clockwise",
+              "selector_changed": "Selector changed"
             }
           }
         }
@@ -113,13 +96,33 @@
             "state": {
               "click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::click%]",
               "double_click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::double_click%]",
-              "down": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::down%]",
               "hold": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::hold%]",
               "push_twist_decrement": "Push-twist decremented",
               "push_twist_increment": "Push-twist incremented",
               "twist_decrement": "Twist decremented",
-              "twist_increment": "Twist incremented",
-              "up": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::up%]"
+              "twist_increment": "Twist incremented"
+            }
+          }
+        }
+      },
+      "dial_big": {
+        "name": "Big dial",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "rotate_clockwise": "[%key:component::flic_button::entity::event::button_twist::state_attributes::event_type::state::rotate_clockwise%]",
+              "rotate_counter_clockwise": "[%key:component::flic_button::entity::event::button_twist::state_attributes::event_type::state::rotate_counter_clockwise%]"
+            }
+          }
+        }
+      },
+      "dial_small": {
+        "name": "Small dial",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "rotate_clockwise": "[%key:component::flic_button::entity::event::button_twist::state_attributes::event_type::state::rotate_clockwise%]",
+              "rotate_counter_clockwise": "[%key:component::flic_button::entity::event::button_twist::state_attributes::event_type::state::rotate_counter_clockwise%]"
             }
           }
         }
@@ -128,6 +131,15 @@
     "sensor": {
       "battery": {
         "name": "Battery"
+      },
+      "battery_voltage": {
+        "name": "Battery voltage"
+      },
+      "selector": {
+        "name": "Selector"
+      },
+      "twist_position": {
+        "name": "Position"
       }
     }
   },
@@ -150,6 +162,32 @@
         "continuous": "Continuous",
         "default": "Default",
         "selector": "Selector mode"
+      }
+    }
+  },
+  "services": {
+    "set_name": {
+      "name": "Set name",
+      "description": "Set the Flic device name (max 23 UTF-8 bytes).",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "New device name."
+        }
+      }
+    },
+    "set_twist_position": {
+      "name": "Set Twist position",
+      "description": "Set the Twist position for a mode (0-12) and percentage (0-100).",
+      "fields": {
+        "mode_index": {
+          "name": "Mode index",
+          "description": "Twist mode index (0-11 selector slots, 12 free rotation)."
+        },
+        "percentage": {
+          "name": "Percentage",
+          "description": "Target position percentage."
+        }
       }
     }
   }

@@ -1,0 +1,31 @@
+set_twist_position:
+  target:
+    device:
+      integration: flic_button
+  fields:
+    mode_index:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 12
+          mode: box
+    percentage:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+          mode: box
+
+set_name:
+  target:
+    device:
+      integration: flic_button
+  fields:
+    name:
+      required: true
+      selector:
+        text:

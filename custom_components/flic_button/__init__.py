@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from bleak import BleakError
 from pyflic_ble import (
@@ -20,6 +20,7 @@ from homeassistant.components.bluetooth.match import BluetoothCallbackMatcher
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     CONF_BATTERY_LEVEL,
@@ -27,13 +28,14 @@ from .const import (
     CONF_PUSH_TWIST_MODE,
     CONF_SERIAL_NUMBER,
     CONF_SIG_BITS,
+    DOMAIN,
 )
 from .helpers import validate_pairing_credentials
+from .services import async_register_services
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
-    Platform.BINARY_SENSOR,
     Platform.EVENT,
     Platform.SENSOR,
 ]
@@ -46,9 +48,21 @@ class FlicButtonData:
     client: FlicClient
     serial_number: str | None
     battery_level: int | None
+    last_voltage: float | None = None
+    selector_index: int | None = None
+    mode_percentage: float | None = None
+    twist_mode_index: int | None = None
+    twist_state_callbacks: list = field(default_factory=list)
 
 
 type FlicButtonConfigEntry = ConfigEntry[FlicButtonData]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the Flic Button integration."""
+    hass.data.setdefault(DOMAIN, {})
+    async_register_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -> bool:

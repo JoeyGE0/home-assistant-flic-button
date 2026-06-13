@@ -26,6 +26,7 @@ CONF_SIG_BITS: Final = (
 
 # Event classes
 EVENT_CLASS_BUTTON: Final = "button"
+EVENT_CLASS_DIAL: Final = "dial"
 
 # Flic event domain
 FLIC_BUTTON_EVENT: Final = f"{DOMAIN}_event"
@@ -35,11 +36,24 @@ CONF_PUSH_TWIST_MODE: Final = "push_twist_mode"
 
 # Sensor entity keys
 SENSOR_BATTERY: Final = "battery"
-BINARY_SENSOR_BATTERY_LOW: Final = "battery_low"
+SENSOR_BATTERY_VOLTAGE: Final = "battery_voltage"
+SENSOR_TWIST_POSITION: Final = "twist_position"
+SENSOR_SELECTOR: Final = "selector"
+
+# Service names
+SERVICE_SET_TWIST_POSITION: Final = "set_twist_position"
+SERVICE_SET_NAME: Final = "set_name"
 
 # Low-battery thresholds (volts). Flic 2 guidance: replace below 2.65 V.
 BATTERY_LOW_VOLTAGE: Final = {
     DeviceType.FLIC2: 2.65,
     DeviceType.DUO: 2.65,
     DeviceType.TWIST: 2.4,
+}
+
+# Approximate full-battery voltage used for percentage estimation.
+BATTERY_FULL_VOLTAGE: Final = {
+    DeviceType.FLIC2: 3.0,
+    DeviceType.DUO: 3.0,
+    DeviceType.TWIST: 3.0,
 }

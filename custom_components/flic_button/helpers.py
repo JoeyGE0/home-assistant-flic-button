@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from pyflic_ble import FlicClient
+from pyflic_ble import DeviceType, FlicClient
 
 from homeassistant.components.bluetooth import (
     BluetoothScanningMode,
@@ -16,7 +16,12 @@ if TYPE_CHECKING:
 
     from . import FlicButtonData
 
-from .const import CONF_PAIRING_ID, CONF_PAIRING_KEY
+from .const import (
+    BATTERY_FULL_VOLTAGE,
+    BATTERY_LOW_VOLTAGE,
+    CONF_PAIRING_ID,
+    CONF_PAIRING_KEY,
+)
 
 PAIR_CONNECT_ATTEMPTS = 3
 ADVERTISEMENT_WAIT_SECONDS = 20
@@ -30,10 +35,7 @@ async def async_wait_for_flic_advertisement(
     """Return True when the Flic is actively advertising (usually while pressed)."""
 
     def _matches(info) -> bool:
-        return (
-            info.address.upper() == address.upper()
-            and info.connectable
-        )
+        return info.address.upper() == address.upper() and info.connectable
 
     try:
         await async_process_advertisements(
@@ -73,9 +75,50 @@ def get_battery_voltage(data: FlicButtonData) -> float | None:
     """Return the best-known battery voltage for a Flic device."""
     client = data.client
     if client.state.battery_voltage is not None:
-        return client.state.battery_voltage
+        data.last_voltage = client.state.battery_voltage
+        return data.last_voltage
+    if data.last_voltage is not None:
+        return data.last_voltage
     if data.battery_level is not None:
-        return FlicClient.battery_raw_to_voltage(
+        voltage = FlicClient.battery_raw_to_voltage(
             int(data.battery_level), client.device_type
         )
+        data.last_voltage = voltage
+        return voltage
     return None
+
+
+def voltage_to_percentage(voltage: float, device_type: DeviceType) -> int:
+    """Estimate battery percentage from voltage using documented thresholds."""
+    low = BATTERY_LOW_VOLTAGE[device_type]
+    full = BATTERY_FULL_VOLTAGE[device_type]
+    if voltage >= full:
+        return 100
+    if voltage <= low:
+        return 0
+    return round((voltage - low) / (full - low) * 100)
+
+
+def is_battery_low(voltage: float, device_type: DeviceType) -> bool:
+    """Return True when voltage is below the documented replacement threshold."""
+    return voltage < BATTERY_LOW_VOLTAGE[device_type]
+
+
+def notify_twist_state_update(
+    data: FlicButtonData, event_type: str, event_data: dict[str, Any]
+) -> None:
+    """Update cached Twist state from documented event fields."""
+    from pyflic_ble.const import EVENT_TYPE_SELECTOR_CHANGED
+
+    if event_type == EVENT_TYPE_SELECTOR_CHANGED:
+        if (selector_index := event_data.get("selector_index")) is not None:
+            data.selector_index = int(selector_index)
+    if (twist_mode_index := event_data.get("twist_mode_index")) is not None:
+        data.twist_mode_index = int(twist_mode_index)
+    if (mode_percentage := event_data.get("mode_percentage")) is not None:
+        data.mode_percentage = float(mode_percentage)
+    if (selector_index := event_data.get("selector_index")) is not None:
+        data.selector_index = int(selector_index)
+
+    for cb in data.twist_state_callbacks:
+        cb()
