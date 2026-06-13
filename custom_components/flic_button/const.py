@@ -31,6 +31,12 @@ EVENT_CLASS_DIAL: Final = "dial"
 # Flic event domain
 FLIC_BUTTON_EVENT: Final = f"{DOMAIN}_event"
 
+# Device automation
+CONF_SUBTYPE: Final = "subtype"
+SUBTYPE_BUTTON: Final = "button"
+SUBTYPE_BIG: Final = "big"
+SUBTYPE_SMALL: Final = "small"
+
 # Options constants
 CONF_PUSH_TWIST_MODE: Final = "push_twist_mode"
 

@@ -30,7 +30,6 @@ class FlicButtonEntity(Entity):
             connections={(CONNECTION_BLUETOOTH, client.address)},
             manufacturer="Shortcut Labs",
             model=model_name,
-            name=client.state.device_name or None,
             serial_number=serial,
             sw_version=str(fw) if fw is not None else None,
         )

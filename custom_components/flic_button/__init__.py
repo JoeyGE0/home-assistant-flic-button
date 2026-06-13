@@ -34,6 +34,7 @@ from .const import (
     DOMAIN,
 )
 from .helpers import (
+    fire_device_automation_event,
     notify_dial_state_update,
     notify_last_event,
     notify_twist_state_update,
@@ -73,6 +74,7 @@ class FlicButtonData:
     last_event_callbacks: list = field(default_factory=list)
     state_callbacks: list = field(default_factory=list)
     was_connected: bool = False
+    initial_name_synced: bool = False
 
 
 type FlicButtonConfigEntry = ConfigEntry[FlicButtonData]
@@ -150,6 +152,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
         """Track button events for last-event and Twist state sensors."""
         notify_last_event(data, event_type, event_data)
         notify_twist_state_update(data, event_type, event_data)
+        fire_device_automation_event(hass, entry, event_type, event_data)
 
     @callback
     def _async_track_rotate_event(event_type: str, event_data: dict[str, Any]) -> None:
@@ -157,6 +160,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
         notify_last_event(data, event_type, event_data)
         notify_twist_state_update(data, event_type, event_data)
         notify_dial_state_update(data, event_data)
+        fire_device_automation_event(hass, entry, event_type, event_data)
 
     def _on_selector_change(selector_index: int, extra_data: dict[str, Any]) -> None:
         """Handle documented Twist selector change callback."""
@@ -164,6 +168,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
         event_data = {"selector_index": selector_index, **extra_data}
         notify_last_event(data, EVENT_TYPE_SELECTOR_CHANGED, event_data)
         notify_twist_state_update(data, EVENT_TYPE_SELECTOR_CHANGED, event_data)
+        fire_device_automation_event(hass, entry, EVENT_TYPE_SELECTOR_CHANGED, event_data)
 
     client.on_selector_change = _on_selector_change
 

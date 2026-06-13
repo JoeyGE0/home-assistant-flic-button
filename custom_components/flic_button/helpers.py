@@ -10,8 +10,9 @@ from homeassistant.components.bluetooth import (
     BluetoothScanningMode,
     async_process_advertisements,
 )
+from homeassistant.const import CONF_ADDRESS, CONF_DEVICE_ID, CONF_TYPE
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 if TYPE_CHECKING:
     from . import FlicButtonConfigEntry, FlicButtonData
@@ -21,7 +22,13 @@ from .const import (
     BATTERY_LOW_VOLTAGE,
     CONF_PAIRING_ID,
     CONF_PAIRING_KEY,
+    CONF_SUBTYPE,
     DOMAIN,
+    FLIC_BUTTON_EVENT,
+    SUBTYPE_BIG,
+    SUBTYPE_BUTTON,
+    SUBTYPE_SMALL,
+    TEXT_DEVICE_NAME,
 )
 
 PAIR_CONNECT_ATTEMPTS = 3
@@ -150,6 +157,19 @@ def notify_last_event(
 
 
 @callback
+def is_device_rename_enabled(hass: HomeAssistant, entry: FlicButtonConfigEntry) -> bool:
+    """Return True when the optional on-device rename entity is enabled."""
+    entity_registry = er.async_get(hass)
+    unique_id = f"{entry.data[CONF_ADDRESS]}-{TEXT_DEVICE_NAME}"
+    entity_id = entity_registry.async_get_entity_id("text", DOMAIN, unique_id)
+    if entity_id is None:
+        return False
+    if (reg_entry := entity_registry.async_get(entity_id)) is None:
+        return False
+    return not reg_entry.disabled
+
+
+@callback
 def sync_ha_device_from_state(
     hass: HomeAssistant, entry: FlicButtonConfigEntry
 ) -> None:
@@ -166,9 +186,83 @@ def sync_ha_device_from_state(
     updates: dict[str, str] = {}
     if state.firmware_version is not None:
         updates["sw_version"] = str(state.firmware_version)
-    if state.device_name and device.name_by_user is None:
+
+    if (
+        state.device_name
+        and device.name_by_user is None
+        and (
+            is_device_rename_enabled(hass, entry)
+            or not data.initial_name_synced
+        )
+    ):
         updates["name"] = state.device_name
+        data.initial_name_synced = True
 
     if updates:
         device_registry.async_update_device(device.id, **updates)
+
+
+def get_config_entry_for_device(
+    hass: HomeAssistant, device_id: str
+) -> FlicButtonConfigEntry | None:
+    """Return the config entry for a Flic device_id."""
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get(device_id)
+    if device is None:
+        return None
+
+    address: str | None = None
+    for domain, identifier in device.identifiers:
+        if domain == DOMAIN:
+            address = identifier
+            break
+
+    if address is None:
+        return None
+
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.data.get(CONF_ADDRESS) == address:
+            return entry
+
+    return None
+
+
+def subtype_for_button_index(button_index: int | None) -> str:
+    """Map documented Duo button_index to a device automation subtype."""
+    if button_index == 0:
+        return SUBTYPE_BIG
+    if button_index == 1:
+        return SUBTYPE_SMALL
+    return SUBTYPE_BUTTON
+
+
+@callback
+def fire_device_automation_event(
+    hass: HomeAssistant,
+    entry: FlicButtonConfigEntry,
+    event_type: str,
+    event_data: dict[str, Any],
+) -> None:
+    """Fire a device automation event (Shelly/ZHA pattern) for every press."""
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get_device(
+        identifiers={(DOMAIN, entry.data[CONF_ADDRESS])}
+    )
+    if device is None:
+        return
+
+    button_index = event_data.get("button_index")
+    subtype = subtype_for_button_index(
+        int(button_index) if button_index is not None else None
+    )
+
+    hass.bus.async_fire(
+        FLIC_BUTTON_EVENT,
+        {
+            CONF_DEVICE_ID: device.id,
+            CONF_TYPE: event_type,
+            CONF_SUBTYPE: subtype,
+            **event_data,
+        },
+    )
 

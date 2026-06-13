@@ -175,6 +175,31 @@
       }
     }
   },
+  "device_automation": {
+    "trigger_type": {
+      "click": "Pressed",
+      "double_click": "Double pressed",
+      "hold": "Held",
+      "swipe_left": "Swiped left",
+      "swipe_right": "Swiped right",
+      "swipe_up": "Swiped up",
+      "swipe_down": "Swiped down",
+      "rotate_clockwise": "Rotated clockwise",
+      "rotate_counter_clockwise": "Rotated counter-clockwise",
+      "selector_changed": "Selector changed",
+      "twist_increment": "Twist incremented",
+      "twist_decrement": "Twist decremented",
+      "push_twist_increment": "Push-twist incremented",
+      "push_twist_decrement": "Push-twist decremented"
+    },
+    "trigger_subtype": {
+      "button": "Button",
+      "big": "Big button",
+      "small": "Small button"
+    },
+    "invalid_trigger": "Trigger {trigger} is not supported by this device",
+    "device_not_found": "Flic device {device} not found"
+  },
   "options": {
     "step": {
       "init": {
