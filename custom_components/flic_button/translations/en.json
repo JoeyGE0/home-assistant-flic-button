@@ -15,8 +15,8 @@
       "unknown": "Unexpected error occurred"
     },
     "progress": {
-      "wait_for_discovery": "Listening for your Flic button. Keep holding the button until it is found (up to {timeout} seconds)…",
-      "pairing": "Connecting through your Bluetooth proxy and pairing. Keep holding the button…"
+      "wait_for_discovery": "{progress_message}",
+      "pairing": "{pairing_message}"
     },
     "step": {
       "bluetooth_confirm": {
@@ -40,8 +40,8 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "Single push",
-              "double_click": "Double push",
+              "click": "Click",
+              "double_click": "Double click",
               "hold": "Hold"
             }
           }
@@ -52,8 +52,8 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "Single push",
-              "double_click": "Double push",
+              "click": "Click",
+              "double_click": "Double click",
               "hold": "Hold",
               "swipe_down": "Swipe down",
               "swipe_left": "Swipe left",
@@ -68,8 +68,8 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "Single push",
-              "double_click": "Double push",
+              "click": "Click",
+              "double_click": "Double click",
               "hold": "Hold",
               "swipe_down": "Swipe down",
               "swipe_left": "Swipe left",
@@ -84,8 +84,8 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "Single push",
-              "double_click": "Double push",
+              "click": "Click",
+              "double_click": "Double click",
               "hold": "Hold",
               "rotate_clockwise": "Rotated clockwise",
               "rotate_counter_clockwise": "Rotated counter-clockwise",
@@ -99,8 +99,8 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "Single push",
-              "double_click": "Double push",
+              "click": "Click",
+              "double_click": "Double click",
               "hold": "Hold",
               "push_twist_decrement": "Push-twist decremented",
               "push_twist_increment": "Push-twist incremented",

@@ -29,6 +29,8 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFl
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
+    ConstantSelector,
+    ConstantSelectorConfig,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -55,6 +57,8 @@ if TYPE_CHECKING:
     from . import FlicButtonConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
+
+CONF_FLOW_INSTRUCTIONS = "instructions"
 
 
 class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -115,9 +119,69 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
         else:
             self._device_type = DeviceType.FLIC2
 
-    def _pairing_description_placeholders(self) -> dict[str, str]:
-        """Shared placeholders for pairing instructions."""
-        return {"timeout": str(int(PAIRING_TIMEOUT))}
+    def _instruction_schema(self, text: str) -> vol.Schema:
+        """Show pairing instructions inline (no translation file required)."""
+        return vol.Schema(
+            {
+                vol.Optional(CONF_FLOW_INSTRUCTIONS): ConstantSelector(
+                    ConstantSelectorConfig(value="", label=text)
+                ),
+            }
+        )
+
+    def _user_prep_text(self) -> str:
+        """Pairing prep shown before discovery starts."""
+        timeout = int(PAIRING_TIMEOUT)
+        return (
+            "Before you continue:\n\n"
+            "1. Factory-reset the button if it was ever used with the Flic app "
+            "or flicd (hold ~15 seconds until the LED flashes rapidly).\n"
+            "2. Put the button in pairing mode — hold for 7 seconds until the "
+            "LED flashes slowly.\n"
+            "3. Stand within range of your ESPHome Bluetooth proxy "
+            "(or local Bluetooth adapter).\n\n"
+            f"When you select Submit, Home Assistant will listen for the button. "
+            f"Keep holding the button until it is found (up to {timeout} seconds)."
+        )
+
+    def _bluetooth_confirm_text(self, name: str) -> str:
+        """Instructions after a Flic is discovered over Bluetooth."""
+        return (
+            f"Set up {name}?\n\n"
+            "On the next screen you will complete pairing. Hold the button until "
+            "pairing finishes and stay near your ESPHome Bluetooth proxy."
+        )
+
+    def _pair_text(self, name: str) -> str:
+        """Instructions for the final pairing step."""
+        return (
+            f"Pair with {name}:\n\n"
+            "1. Make sure the LED is flashing (pairing mode). Hold the button "
+            "for 7 seconds if needed.\n"
+            "2. Select Submit below.\n"
+            "3. Keep holding the button until pairing finishes.\n\n"
+            "Stay near your ESPHome Bluetooth proxy during pairing."
+        )
+
+    def _pairing_description_placeholders(
+        self, name: str | None = None
+    ) -> dict[str, str]:
+        """Shared placeholders for progress text and translated steps."""
+        timeout = str(int(PAIRING_TIMEOUT))
+        placeholders = {
+            "timeout": timeout,
+            "progress_message": (
+                "Listening for your Flic button. Keep holding the button until it "
+                f"is found (up to {timeout} seconds)…"
+            ),
+            "pairing_message": (
+                "Connecting through your Bluetooth proxy and pairing. "
+                "Keep holding the button…"
+            ),
+        }
+        if name is not None:
+            placeholders["name"] = name
+        return placeholders
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -146,9 +210,9 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self.async_step_pair(None)
 
         if user_input is None:
-            self._set_confirm_only()
             return self.async_show_form(
                 step_id="user",
+                data_schema=self._instruction_schema(self._user_prep_text()),
                 description_placeholders=self._pairing_description_placeholders(),
             )
 
@@ -213,15 +277,13 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         if user_input is None:
-            self._set_confirm_only()
             name = self._discovery_info.name or self._discovery_info.address
-            placeholders = {
-                "name": name,
-                **self._pairing_description_placeholders(),
-            }
             return self.async_show_form(
                 step_id="bluetooth_confirm",
-                description_placeholders=placeholders,
+                data_schema=self._instruction_schema(
+                    self._bluetooth_confirm_text(name)
+                ),
+                description_placeholders=self._pairing_description_placeholders(name),
             )
 
         return await self.async_step_pair(None)
@@ -263,11 +325,9 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
         name = self._discovery_info.name or self._discovery_info.address
         return self.async_show_form(
             step_id="pair",
+            data_schema=self._instruction_schema(self._pair_text(name)),
             errors=errors,
-            description_placeholders={
-                "name": name,
-                **self._pairing_description_placeholders(),
-            },
+            description_placeholders=self._pairing_description_placeholders(name),
         )
 
     async def async_step_pair_done(

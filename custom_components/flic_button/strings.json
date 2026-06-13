@@ -2,8 +2,8 @@
   "config": {
     "flow_title": "{name}",
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-      "no_devices_found": "[%key:common::config_flow::abort::no_devices_found%]"
+      "already_configured": "Device is already configured",
+      "no_devices_found": "No devices found on the network"
     },
     "create_entry": {
       "default": "Device paired. Press the button near your Bluetooth proxy to refresh battery and connection status."
@@ -12,11 +12,11 @@
       "cannot_connect": "Could not connect through your Bluetooth proxy. Hold the button within range of your nearest ESPHome proxy, then submit again.",
       "invalid_signature": "Invalid device signature during pairing. Factory-reset the button if it was used with the Flic app or flicd, then try again.",
       "pairing_failed": "Pairing failed. Factory-reset the button if it was used with the Flic app or flicd, hold 7 seconds until the LED flashes, submit, and keep holding until pairing finishes.",
-      "unknown": "[%key:common::config_flow::error::unknown%]"
+      "unknown": "Unexpected error occurred"
     },
     "progress": {
-      "wait_for_discovery": "Listening for your Flic button. Keep holding the button until it is found (up to {timeout} seconds)\u2026",
-      "pairing": "Connecting through your Bluetooth proxy and pairing. Keep holding the button\u2026"
+      "wait_for_discovery": "{progress_message}",
+      "pairing": "{pairing_message}"
     },
     "step": {
       "bluetooth_confirm": {
@@ -40,8 +40,8 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "Single push",
-              "double_click": "Double push",
+              "click": "Click",
+              "double_click": "Double click",
               "hold": "Hold"
             }
           }
@@ -52,9 +52,9 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::click%]",
-              "double_click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::double_click%]",
-              "hold": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::hold%]",
+              "click": "Click",
+              "double_click": "Double click",
+              "hold": "Hold",
               "swipe_down": "Swipe down",
               "swipe_left": "Swipe left",
               "swipe_right": "Swipe right",
@@ -68,9 +68,9 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::click%]",
-              "double_click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::double_click%]",
-              "hold": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::hold%]",
+              "click": "Click",
+              "double_click": "Double click",
+              "hold": "Hold",
               "swipe_down": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::swipe_down%]",
               "swipe_left": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::swipe_left%]",
               "swipe_right": "[%key:component::flic_button::entity::event::button_big::state_attributes::event_type::state::swipe_right%]",
@@ -84,9 +84,9 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::click%]",
-              "double_click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::double_click%]",
-              "hold": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::hold%]",
+              "click": "Click",
+              "double_click": "Double click",
+              "hold": "Hold",
               "rotate_clockwise": "Rotated clockwise",
               "rotate_counter_clockwise": "Rotated counter-clockwise",
               "selector_changed": "Selector changed"
@@ -99,9 +99,9 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::click%]",
-              "double_click": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::double_click%]",
-              "hold": "[%key:component::flic_button::entity::event::button::state_attributes::event_type::state::hold%]",
+              "click": "Click",
+              "double_click": "Double click",
+              "hold": "Hold",
               "push_twist_decrement": "Push-twist decremented",
               "push_twist_increment": "Push-twist incremented",
               "twist_decrement": "Twist decremented",
