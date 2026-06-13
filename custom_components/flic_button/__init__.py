@@ -167,11 +167,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
 
     client.on_selector_change = _on_selector_change
 
-    entry.async_on_remove(client.register_state_callback(_async_on_client_state))
-    entry.async_on_remove(
+    entry.async_on_unload(client.register_state_callback(_async_on_client_state))
+    entry.async_on_unload(
         client.register_button_event_callback(_async_track_button_event)
     )
-    entry.async_on_remove(
+    entry.async_on_unload(
         client.register_rotate_event_callback(_async_track_rotate_event)
     )
 
