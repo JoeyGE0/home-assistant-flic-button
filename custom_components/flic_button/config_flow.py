@@ -48,6 +48,7 @@ from .const import (
 from .helpers import (
     ADVERTISEMENT_WAIT_SECONDS,
     PAIR_CONNECT_ATTEMPTS,
+    normalize_address,
 )
 
 if TYPE_CHECKING:
@@ -60,7 +61,7 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Flic Button."""
 
     VERSION = 1
-    MINOR_VERSION = 3
+    MINOR_VERSION = 4
 
     def __init__(self) -> None:
         """Initialize the config flow."""
@@ -377,7 +378,7 @@ class FlicButtonConfigFlow(ConfigFlow, domain=DOMAIN):
                     else DeviceType.from_serial_number(serial_number)
                 )
                 return {
-                    CONF_ADDRESS: address,
+                    CONF_ADDRESS: normalize_address(address),
                     CONF_PAIRING_ID: int(pairing_id),
                     CONF_PAIRING_KEY: pairing_key.hex(),
                     CONF_SERIAL_NUMBER: serial_number,

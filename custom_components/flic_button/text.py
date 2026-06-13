@@ -43,7 +43,7 @@ class FlicDeviceNameText(FlicButtonEntity, TextEntity):
         super().__init__(data)
         self._entry = entry
         self._last_device_name: str | None = data.client.state.device_name
-        self._attr_unique_id = f"{self._client.address}-{TEXT_DEVICE_NAME}"
+        self._attr_unique_id = self._entity_unique_id(TEXT_DEVICE_NAME)
         self._attr_suggested_object_id = TEXT_DEVICE_NAME
 
     @property

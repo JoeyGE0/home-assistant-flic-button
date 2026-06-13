@@ -12,8 +12,10 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 
 from .const import DOMAIN, SERVICE_SET_NAME, SERVICE_SET_TWIST_POSITION
+from .helpers import normalize_address
 
 if TYPE_CHECKING:
     from . import FlicButtonConfigEntry
@@ -71,7 +73,9 @@ def _get_client_for_device(hass: HomeAssistant, device_id: str):
         raise HomeAssistantError("Device is not a Flic Button device")
 
     for entry in hass.config_entries.async_entries(DOMAIN):
-        if entry.data.get(CONF_ADDRESS) == address:
+        if normalize_address(entry.data.get(CONF_ADDRESS, "")) == normalize_address(
+            address
+        ):
             return entry.runtime_data.client, entry
 
     raise HomeAssistantError("No Flic Button config entry found for device")

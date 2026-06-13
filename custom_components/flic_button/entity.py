@@ -26,8 +26,8 @@ class FlicButtonEntity(Entity):
 
         fw = client.state.firmware_version
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, client.address)},
-            connections={(CONNECTION_BLUETOOTH, client.address)},
+            identifiers={(DOMAIN, data.address)},
+            connections={(CONNECTION_BLUETOOTH, data.address)},
             manufacturer="Shortcut Labs",
             model=model_name,
             serial_number=serial,
@@ -35,6 +35,10 @@ class FlicButtonEntity(Entity):
         )
         self._client = client
         self._data = data
+
+    def _entity_unique_id(self, suffix: str) -> str:
+        """Build a stable entity unique_id from the config entry address."""
+        return f"{self._data.address}-{suffix}"
 
     @property
     def available(self) -> bool:

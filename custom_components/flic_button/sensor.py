@@ -84,7 +84,7 @@ class FlicSignalStrengthSensor(FlicButtonEntity, SensorEntity):
         """Initialize the signal strength sensor."""
         super().__init__(data)
         self._data = data
-        self._attr_unique_id = f"{self._client.address}-{SENSOR_SIGNAL_STRENGTH}"
+        self._attr_unique_id = self._entity_unique_id(SENSOR_SIGNAL_STRENGTH)
         self._attr_suggested_object_id = SENSOR_SIGNAL_STRENGTH
         if service_info := bluetooth.async_last_service_info(
             hass, entry.data[CONF_ADDRESS], connectable=True
@@ -135,7 +135,7 @@ class FlicBatterySensor(FlicButtonEntity, SensorEntity):
         """Initialize the battery sensor."""
         super().__init__(data)
         self._data = data
-        self._attr_unique_id = f"{self._client.address}-{SENSOR_BATTERY}"
+        self._attr_unique_id = self._entity_unique_id(SENSOR_BATTERY)
         self._attr_suggested_object_id = SENSOR_BATTERY
 
     @property
@@ -182,7 +182,7 @@ class FlicBatteryVoltageSensor(FlicButtonEntity, SensorEntity):
         """Initialize the battery voltage sensor."""
         super().__init__(data)
         self._data = data
-        self._attr_unique_id = f"{self._client.address}-{SENSOR_BATTERY_VOLTAGE}"
+        self._attr_unique_id = self._entity_unique_id(SENSOR_BATTERY_VOLTAGE)
         self._attr_suggested_object_id = SENSOR_BATTERY_VOLTAGE
 
     @property
@@ -212,7 +212,7 @@ class FlicTwistPositionSensor(FlicButtonEntity, SensorEntity):
         """Initialize the Twist position sensor."""
         super().__init__(data)
         self._data = data
-        self._attr_unique_id = f"{self._client.address}-{SENSOR_TWIST_POSITION}"
+        self._attr_unique_id = self._entity_unique_id(SENSOR_TWIST_POSITION)
         self._attr_suggested_object_id = SENSOR_TWIST_POSITION
 
     @property
@@ -252,7 +252,7 @@ class FlicTwistSelectorSensor(FlicButtonEntity, SensorEntity):
         """Initialize the Twist selector sensor."""
         super().__init__(data)
         self._data = data
-        self._attr_unique_id = f"{self._client.address}-{SENSOR_SELECTOR}"
+        self._attr_unique_id = self._entity_unique_id(SENSOR_SELECTOR)
         self._attr_suggested_object_id = SENSOR_SELECTOR
 
     @property
@@ -288,7 +288,7 @@ class FlicDuoDialSensor(FlicButtonEntity, SensorEntity):
         self._data = data
         self._button_index = button_index
         self._attr_translation_key = translation_key
-        self._attr_unique_id = f"{self._client.address}-{translation_key}"
+        self._attr_unique_id = self._entity_unique_id(translation_key)
         self._attr_suggested_object_id = translation_key
 
     @property

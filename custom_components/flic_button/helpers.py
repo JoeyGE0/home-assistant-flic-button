@@ -35,6 +35,11 @@ PAIR_CONNECT_ATTEMPTS = 3
 ADVERTISEMENT_WAIT_SECONDS = 20
 
 
+def normalize_address(address: str) -> str:
+    """Normalize a Bluetooth MAC for stable registry keys."""
+    return address.upper()
+
+
 async def async_wait_for_flic_advertisement(
     hass: HomeAssistant,
     address: str,
@@ -179,7 +184,7 @@ def sync_ha_device_from_state(
     state = client.state
 
     device_registry = dr.async_get(hass)
-    device = device_registry.async_get_device(identifiers={(DOMAIN, client.address)})
+    device = device_registry.async_get_device(identifiers={(DOMAIN, data.address)})
     if device is None:
         return
 
@@ -221,7 +226,9 @@ def get_config_entry_for_device(
         return None
 
     for entry in hass.config_entries.async_entries(DOMAIN):
-        if entry.data.get(CONF_ADDRESS) == address:
+        if normalize_address(entry.data.get(CONF_ADDRESS, "")) == normalize_address(
+            address
+        ):
             return entry
 
     return None

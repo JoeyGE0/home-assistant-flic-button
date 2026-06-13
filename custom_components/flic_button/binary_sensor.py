@@ -37,7 +37,7 @@ class FlicConnectionBinarySensor(FlicButtonEntity, BinarySensorEntity):
         """Initialize the connection binary sensor."""
         super().__init__(data)
         self._data = data
-        self._attr_unique_id = f"{self._client.address}-{BINARY_SENSOR_CONNECTED}"
+        self._attr_unique_id = self._entity_unique_id(BINARY_SENSOR_CONNECTED)
         self._attr_suggested_object_id = BINARY_SENSOR_CONNECTED
 
     @property

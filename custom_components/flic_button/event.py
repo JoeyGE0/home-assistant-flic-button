@@ -199,7 +199,7 @@ class FlicButtonEventEntity(FlicButtonEntity, EventEntity):
         self._button_index = button_index
         self._is_twist = is_twist
         self._attr_translation_key = description.translation_key
-        self._attr_unique_id = f"{self._client.address}-{description.key}"
+        self._attr_unique_id = self._entity_unique_id(description.key)
         self._attr_suggested_object_id = description.translation_key
 
     async def async_added_to_hass(self) -> None:
@@ -269,7 +269,7 @@ class FlicButtonDialEventEntity(FlicButtonEntity, EventEntity):
         self.entity_description = description
         self._button_index = button_index
         self._attr_translation_key = description.translation_key
-        self._attr_unique_id = f"{self._client.address}-{description.key}"
+        self._attr_unique_id = self._entity_unique_id(description.key)
         self._attr_suggested_object_id = description.translation_key
 
     async def async_added_to_hass(self) -> None:

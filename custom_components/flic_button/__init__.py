@@ -42,6 +42,7 @@ from .const import (
 )
 from .helpers import (
     fire_device_automation_event,
+    normalize_address,
     notify_dial_state_update,
     notify_rssi_update,
     notify_twist_state_update,
@@ -65,6 +66,7 @@ class FlicButtonData:
     """Runtime data for a Flic Button config entry."""
 
     client: FlicClient
+    address: str
     serial_number: str | None
     battery_level: int | None
     last_voltage: float | None = None
@@ -96,43 +98,79 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-def _async_cleanup_stale_entities(hass: HomeAssistant, address: str) -> None:
+def _async_get_device_for_address(
+    device_registry: dr.DeviceRegistry, address: str
+) -> dr.DeviceEntry | None:
+    """Return a device entry regardless of stored MAC address casing."""
+    normalized = normalize_address(address)
+    for candidate in {address, normalized, address.lower()}:
+        if device := device_registry.async_get_device(identifiers={(DOMAIN, candidate)}):
+            return device
+    return None
+
+
+def _async_cleanup_stale_entities(
+    hass: HomeAssistant, address: str, device: dr.DeviceEntry | None = None
+) -> None:
     """Remove legacy entities so they recreate with proper IDs and names."""
     entity_registry = er.async_get(hass)
-    address = address.upper()
+    normalized = normalize_address(address)
+    to_remove: set[str] = set()
 
     for entity in er.entities.values():
-        if entity.platform != DOMAIN or not entity.unique_id:
+        if entity.platform != DOMAIN:
             continue
-        if not entity.unique_id.startswith(f"{address}-"):
+        if device is not None and entity.device_id == device.id:
+            to_remove.add(entity.entity_id)
             continue
-        entity_registry.async_remove(entity.entity_id)
+        if entity.unique_id and entity.unique_id.upper().startswith(
+            f"{normalized}-"
+        ):
+            to_remove.add(entity.entity_id)
+
+    for entity_id in to_remove:
+        entity_registry.async_remove(entity_id)
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate config entry."""
-    if entry.version == 1 and (entry.minor_version or 0) < 3:
-        _async_cleanup_stale_entities(hass, entry.data[CONF_ADDRESS])
-
+    if entry.version == 1 and (entry.minor_version or 0) < 4:
+        address = entry.data[CONF_ADDRESS]
+        normalized = normalize_address(address)
         device_registry = dr.async_get(hass)
-        if device := device_registry.async_get_device(
-            identifiers={(DOMAIN, entry.data[CONF_ADDRESS])}
-        ):
-            data = dict(entry.data)
-            if device.name_by_user is not None:
-                data[CONF_INITIAL_NAME_SYNCED] = True
-            hass.config_entries.async_update_entry(
-                entry, data=data, minor_version=3
+        device = _async_get_device_for_address(device_registry, address)
+
+        if device is not None:
+            stored_address = next(
+                (
+                    identifier
+                    for domain, identifier in device.identifiers
+                    if domain == DOMAIN
+                ),
+                normalized,
             )
-        else:
-            hass.config_entries.async_update_entry(entry, minor_version=3)
+            if stored_address != normalized:
+                device_registry.async_update_device(
+                    device.id,
+                    new_identifiers={(DOMAIN, normalized)},
+                )
+
+        _async_cleanup_stale_entities(hass, address, device)
+
+        data = dict(entry.data)
+        data[CONF_ADDRESS] = normalized
+        if device is not None and device.name_by_user is not None:
+            data[CONF_INITIAL_NAME_SYNCED] = True
+        hass.config_entries.async_update_entry(
+            entry, data=data, minor_version=4
+        )
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -> bool:
     """Set up Flic Button from a config entry."""
 
-    address: str = entry.data[CONF_ADDRESS]
+    address: str = normalize_address(entry.data[CONF_ADDRESS])
     credentials = validate_pairing_credentials(entry.data)
     if credentials is None:
         _LOGGER.error(
@@ -166,6 +204,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
 
     entry.runtime_data = FlicButtonData(
         client=client,
+        address=address,
         serial_number=serial_number,
         battery_level=battery_level,
     )
