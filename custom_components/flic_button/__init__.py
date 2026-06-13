@@ -37,6 +37,7 @@ from .helpers import (
     fire_device_automation_event,
     notify_dial_state_update,
     notify_last_event,
+    notify_rssi_update,
     notify_twist_state_update,
     sync_ha_device_from_state,
     validate_pairing_credentials,
@@ -73,8 +74,11 @@ class FlicButtonData:
     dial_state_callbacks: list = field(default_factory=list)
     last_event_callbacks: list = field(default_factory=list)
     state_callbacks: list = field(default_factory=list)
+    rssi_callbacks: list = field(default_factory=list)
     was_connected: bool = False
     initial_name_synced: bool = False
+    last_rssi: int | None = None
+    last_rssi_source: str | None = None
 
 
 type FlicButtonConfigEntry = ConfigEntry[FlicButtonData]
@@ -187,6 +191,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: FlicButtonConfigEntry) -
     ) -> None:
         """Handle Bluetooth updates for connection/reconnection."""
         client.set_ble_device(service_info.device)
+        notify_rssi_update(data, service_info.rssi, service_info.source)
 
     entry.async_on_unload(
         bluetooth.async_register_callback(

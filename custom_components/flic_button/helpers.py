@@ -156,6 +156,15 @@ def notify_last_event(
     _notify_callbacks(data.last_event_callbacks)
 
 
+def notify_rssi_update(
+    data: FlicButtonData, rssi: int, source: str
+) -> None:
+    """Store the latest advertisement RSSI from the Bluetooth stack."""
+    data.last_rssi = rssi
+    data.last_rssi_source = source
+    _notify_callbacks(data.rssi_callbacks)
+
+
 @callback
 def is_device_rename_enabled(hass: HomeAssistant, entry: FlicButtonConfigEntry) -> bool:
     """Return True when the optional on-device rename entity is enabled."""

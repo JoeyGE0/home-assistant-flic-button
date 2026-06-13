@@ -1,6 +1,20 @@
-# Flic Button (HACS)
+<div align="center">
 
-Native Bluetooth integration for **Flic 2**, **Flic Duo**, and **Flic Twist** in Home Assistant — no `flicd` add-on and no dedicated USB Bluetooth dongle required.
+# Flic Button
+
+<img src="https://brands.home-assistant.io/flic/icon.png" alt="Flic Button Icon" width="128" height="128">
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12%2B-blue)](https://www.home-assistant.io/)
+
+**Native Bluetooth integration for Flic 2, Flic Duo, and Flic Twist in Home Assistant — no flicd add-on and no dedicated USB Bluetooth dongle required.**
+
+[Supported devices](#supported-devices) • [Install](#install-hacs) • [Pair a button](#pair-a-button) • [Upstream](#upstream)
+
+</div>
+
+---
 
 Works with the Home Assistant Bluetooth integration and **ESPHome Bluetooth proxies**.
 
@@ -34,9 +48,9 @@ Works with the Home Assistant Bluetooth integration and **ESPHome Bluetooth prox
 3. Hold the button for ~**7 seconds** until the LED flashes (pairing mode)
 4. Confirm discovery, then on the pair screen **submit while still holding**
 5. Stand near your **ESPHome Bluetooth proxy** during pairing — active BLE connections go through it
-6. Use the **Button** event entity in automations (single, double, hold, etc.)
+6. Use the **Button** event entity or **device triggers** in automations (single, double, hold, etc.)
 
-Each device also exposes **Battery** (voltage in V) and **Battery low** entities. Battery updates when the button connects — press it near your proxy to refresh the reading.
+Each device also exposes **Battery** (% and optional voltage), **Connected**, **Signal strength** (dBm while advertising), and optional dial/twist sensors. Battery updates when the button connects — press it near your proxy to refresh the reading.
 
 Flic buttons only advertise while pressed. The integration retries up to 3 times and reconnects automatically when you press the button later.
 

@@ -43,6 +43,7 @@ CONF_PUSH_TWIST_MODE: Final = "push_twist_mode"
 # Entity keys
 SENSOR_BATTERY: Final = "battery"
 SENSOR_BATTERY_VOLTAGE: Final = "battery_voltage"
+SENSOR_SIGNAL_STRENGTH: Final = "signal_strength"
 SENSOR_TWIST_POSITION: Final = "twist_position"
 SENSOR_SELECTOR: Final = "selector"
 SENSOR_DIAL_BIG: Final = "dial_position_big"

@@ -6,12 +6,13 @@ from typing import Any
 
 from pyflic_ble import FlicState, PushTwistMode
 
+from homeassistant.components import bluetooth
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfElectricPotential
+from homeassistant.const import CONF_ADDRESS, PERCENTAGE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT, UnitOfElectricPotential
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -24,12 +25,14 @@ from .const import (
     SENSOR_DIAL_SMALL,
     SENSOR_LAST_EVENT,
     SENSOR_SELECTOR,
+    SENSOR_SIGNAL_STRENGTH,
     SENSOR_TWIST_POSITION,
 )
 from .entity import FlicButtonEntity
 from .helpers import (
     get_battery_voltage,
     is_battery_low,
+    notify_rssi_update,
     notify_twist_state_update,
     voltage_to_percentage,
 )
@@ -63,6 +66,7 @@ async def async_setup_entry(
     entities: list[SensorEntity] = [
         FlicBatterySensor(data),
         FlicBatteryVoltageSensor(data),
+        FlicSignalStrengthSensor(hass, entry, data),
         FlicLastEventSensor(data),
     ]
 
@@ -81,6 +85,58 @@ async def async_setup_entry(
         )
 
     async_add_entities(entities)
+
+
+class FlicSignalStrengthSensor(FlicButtonEntity, SensorEntity):
+    """BLE signal strength (RSSI in dBm) from advertisement packets."""
+
+    _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
+    _attr_native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = SENSOR_SIGNAL_STRENGTH
+
+    def __init__(
+        self, hass: HomeAssistant, entry: FlicButtonConfigEntry, data: FlicButtonData
+    ) -> None:
+        """Initialize the signal strength sensor."""
+        super().__init__(data)
+        self._data = data
+        self._attr_unique_id = f"{self._client.address}-{SENSOR_SIGNAL_STRENGTH}"
+        if service_info := bluetooth.async_last_service_info(
+            hass, entry.data[CONF_ADDRESS], connectable=True
+        ):
+            notify_rssi_update(data, service_info.rssi, service_info.source)
+
+    @property
+    def available(self) -> bool:
+        """Return True after at least one advertisement was heard."""
+        return self._data.last_rssi is not None
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the latest RSSI in dBm."""
+        return self._data.last_rssi
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | bool | None]:
+        """Return which scanner heard the button and connection state."""
+        return {
+            "source": self._data.last_rssi_source,
+            "connected": self._client.state.connected,
+        }
+
+    async def async_added_to_hass(self) -> None:
+        """Register callbacks for RSSI updates."""
+        await super().async_added_to_hass()
+
+        @callback
+        def _async_rssi_changed() -> None:
+            self.async_write_ha_state()
+
+        self._data.rssi_callbacks.append(_async_rssi_changed)
+        self.async_on_remove(
+            lambda: self._data.rssi_callbacks.remove(_async_rssi_changed)
+        )
 
 
 class FlicBatterySensor(FlicButtonEntity, SensorEntity):

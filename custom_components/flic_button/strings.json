@@ -140,6 +140,9 @@
       "battery_voltage": {
         "name": "Battery voltage"
       },
+      "signal_strength": {
+        "name": "Signal strength"
+      },
       "dial_position_big": {
         "name": "Big dial position"
       },

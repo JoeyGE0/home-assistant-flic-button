@@ -15,6 +15,7 @@
     "sensor": {
       "battery": { "default": "mdi:battery" },
       "battery_voltage": { "default": "mdi:battery-outline" },
+      "signal_strength": { "default": "mdi:wifi-strength-3" },
       "dial_position_big": { "default": "mdi:rotate-right" },
       "dial_position_small": { "default": "mdi:rotate-right" },
       "last_event": { "default": "mdi:history" },
